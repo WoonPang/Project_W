@@ -6,7 +6,7 @@ using UnityEngine;
 
 public static class BarrageSkillSetup
 {
-    private const string ScenePath = "Assets/01. Scenes/Prototype.unity";
+    private const string ScenePath = "Assets/01. Scenes/Prototype_Test.unity";
     private const string PlayerPath = "Assets/04. Prefabs/Characters/PrototypePlayer.prefab";
     private const string DummyPath = "Assets/04. Prefabs/Targets/TrainingDummy.prefab";
     private const string BarragePath = "Assets/04. Prefabs/Projectiles/BarrageProjectile.prefab";

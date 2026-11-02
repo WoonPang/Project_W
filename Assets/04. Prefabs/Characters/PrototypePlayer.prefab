@@ -195,6 +195,10 @@ MonoBehaviour:
   attackDamage: 10
   moveSpeed: 1
   attackSpeed: 1
+  healthPerLevel: 15
+  attackDamagePerLevel: 2.5
+  moveSpeedPerLevel: 0.025
+  attackSpeedPerLevel: 0.025
 --- !u!114 &425111159787045467
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -267,7 +271,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2f3c4a6111234c3f92954b0d5e92e7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAutomaticAugments2D
-  shieldRadius: 0.9
   slowRadius: 3
   slowDuration: 7
   stunRadius: 3

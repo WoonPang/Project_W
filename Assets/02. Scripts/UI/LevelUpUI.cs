@@ -14,6 +14,7 @@ public sealed class LevelUpUI : MonoBehaviour
     private PlayerAugments augments;
     private Font runtimeFont;
     private Button[] buttons;
+    private Vector2[] cardPositions;
     private AugmentId[] offers;
     private int pendingChoices;
     private float timeScaleBeforeOpen = 1f;
@@ -33,6 +34,9 @@ public sealed class LevelUpUI : MonoBehaviour
         progress = FindFirstObjectByType<PlayerProgress>();
         augments = FindFirstObjectByType<PlayerAugments>();
         buttons = new[] { firstButton, secondButton, thirdButton };
+        cardPositions = new Vector2[buttons.Length];
+        for (int index = 0; index < buttons.Length; index++)
+            cardPositions[index] = ((RectTransform)buttons[index].transform).anchoredPosition;
         overlayRoot.SetActive(false);
 
         runtimeFont = Font.CreateDynamicFontFromOSFont(
@@ -69,6 +73,15 @@ public sealed class LevelUpUI : MonoBehaviour
         offers = augments.RollOffers();
         for (int index = 0; index < buttons.Length; index++)
         {
+            bool available = index < offers.Length;
+            buttons[index].gameObject.SetActive(available);
+            RectTransform card = (RectTransform)buttons[index].transform;
+            card.anchoredPosition = offers.Length == 2 && available
+                ? cardPositions[1] + new Vector2((index == 0 ? -1f : 1f) * 255f, 0f)
+                : cardPositions[index];
+            if (!available)
+                continue;
+
             AugmentDefinition definition = AugmentCatalog.Get(offers[index]);
             int currentLevel = augments.GetLevel(offers[index]);
             Text title = buttons[index].transform.Find("Title").GetComponent<Text>();
@@ -76,10 +89,8 @@ public sealed class LevelUpUI : MonoBehaviour
             title.text = definition.Title;
             title.fontSize = 32;
             description.fontSize = 26;
-            description.text = definition.MaxLevel == int.MaxValue
-                ? "반복 획득\n" + definition.DescriptionForNextLevel(currentLevel)
-                : "Lv " + (currentLevel + 1) + "/" + definition.MaxLevel + "\n" +
-                  definition.DescriptionForNextLevel(currentLevel);
+            description.text = definition.LabelForNextLevel(currentLevel) + "\n" +
+                               definition.DescriptionForNextLevel(currentLevel);
         }
     }
 
@@ -102,7 +113,7 @@ public sealed class LevelUpUI : MonoBehaviour
 
     private void Choose(int index)
     {
-        if (!IsOpen || offers == null || augments == null)
+        if (!IsOpen || offers == null || augments == null || index < 0 || index >= offers.Length)
             return;
         augments.Apply(offers[index]);
         pendingChoices--;

@@ -6,7 +6,7 @@ using UnityEngine;
 public static class DashAndCooldownSetup
 {
     private const string PlayerPath = "Assets/04. Prefabs/Characters/PrototypePlayer.prefab";
-    private const string ScenePath = "Assets/01. Scenes/Prototype.unity";
+    private const string ScenePath = "Assets/01. Scenes/Prototype_Test.unity";
 
     public static void Apply()
     {

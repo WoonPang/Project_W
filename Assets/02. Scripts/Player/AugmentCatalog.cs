@@ -13,7 +13,9 @@ public enum AugmentId
     MaxHealth,
     AttackDamage,
     MoveSpeed,
-    AttackSpeed
+    AttackSpeed,
+    EnemySlowRange,
+    EnemyStunRange
 }
 
 public enum AugmentCategory
@@ -49,6 +51,12 @@ public sealed class AugmentDefinition
         int index = Math.Min(currentLevel, levelDescriptions.Length - 1);
         return levelDescriptions[index];
     }
+
+    public string LabelForNextLevel(int currentLevel)
+    {
+        return MaxLevel != int.MaxValue && currentLevel + 1 == MaxLevel
+            ? "Lv.MAX" : "Lv" + (currentLevel + 1);
+    }
 }
 
 public static class AugmentCatalog
@@ -57,30 +65,32 @@ public static class AugmentCatalog
     {
         new AugmentDefinition(AugmentId.BarrageBullets, AugmentCategory.Character,
             "무차별 난사 탄환", 5,
-            "+10발 · 총 60발", "+10발 · 총 70발", "+10발 · 총 80발",
-            "+10발 · 총 90발", "+10발 · 총 100발"),
+            "탄환 +10발", "탄환 +10발", "탄환 +10발",
+            "탄환 +10발", "탄환 +10발"),
         new AugmentDefinition(AugmentId.BarrageDamage, AugmentCategory.Character,
             "무차별 난사 피해", 5,
-            "배율 +0.1 · 총 1.6배", "배율 +0.1 · 총 1.7배",
-            "배율 +0.1 · 총 1.8배", "배율 +0.1 · 총 1.9배",
-            "배율 +0.1 · 총 2.0배"),
+            "피해 배율 +0.1", "피해 배율 +0.1", "피해 배율 +0.1",
+            "피해 배율 +0.1", "피해 배율 +0.1"),
         new AugmentDefinition(AugmentId.BarrageCooldown, AugmentCategory.Character,
             "무차별 난사 쿨타임", 5,
-            "2.5초 감소 · 27.5초", "총 5초 감소 · 25초",
-            "총 7.5초 감소 · 22.5초", "총 10초 감소 · 20초",
-            "총 15초 감소 · 15초"),
+            "쿨타임 30초 → 27.5초", "쿨타임 27.5초 → 25초",
+            "쿨타임 25초 → 22.5초", "쿨타임 22.5초 → 20초",
+            "쿨타임 20초 → 15초"),
         new AugmentDefinition(AugmentId.Shield, AugmentCategory.AutomaticSkill,
-            "공격 1회 보호", 5,
-            "파란 보호막 원\n쿨타임 30초", "쿨타임 27.5초", "쿨타임 25초",
-            "쿨타임 22.5초", "쿨타임 20초"),
+            "보호막", 5,
+            "피해 1회 방어\n쿨타임 30초",
+            "쿨타임 30초 → 27.5초", "쿨타임 27.5초 → 25초",
+            "쿨타임 25초 → 22.5초", "쿨타임 22.5초 → 20초"),
         new AugmentDefinition(AugmentId.EnemySlow, AugmentCategory.AutomaticSkill,
             "얼음지대", 5,
-            "25% 둔화 · 7초 지속\n반경 3 · 쿨타임 20초", "쿨타임 19초", "쿨타임 18초",
-            "쿨타임 17초", "쿨타임 15초"),
+            "25% 둔화 · 7초 지속\n쿨타임 20초",
+            "쿨타임 20초 → 19초", "쿨타임 19초 → 18초",
+            "쿨타임 18초 → 17초", "쿨타임 17초 → 15초"),
         new AugmentDefinition(AugmentId.EnemyStun, AugmentCategory.AutomaticSkill,
             "뇌전", 5,
-            "3초 후 1.5초 기절\n반경 3 · 쿨타임 15초", "쿨타임 14초", "쿨타임 13초",
-            "쿨타임 12초", "쿨타임 10초"),
+            "3초 뒤 시전 · 1.5초 기절\n쿨타임 15초",
+            "쿨타임 15초 → 14초", "쿨타임 14초 → 13초",
+            "쿨타임 13초 → 12초", "쿨타임 12초 → 10초"),
         new AugmentDefinition(AugmentId.DashCooldown, AugmentCategory.OtherSkill,
             "회피 쿨타임", 5,
             "1초 감소 · 9초", "총 2초 감소 · 8초", "총 3초 감소 · 7초",
@@ -90,9 +100,23 @@ public static class AugmentCatalog
         new AugmentDefinition(AugmentId.AttackDamage, AugmentCategory.Stat,
             "공격력 증가", int.MaxValue, "공격력 +10"),
         new AugmentDefinition(AugmentId.MoveSpeed, AugmentCategory.Stat,
-            "이동속도 증가", int.MaxValue, "이동속도 +0.1"),
+            "이동속도 증가", 5,
+            "이동속도 +0.05", "이동속도 +0.05", "이동속도 +0.05",
+            "이동속도 +0.05", "이동속도 +0.05"),
         new AugmentDefinition(AugmentId.AttackSpeed, AugmentCategory.Stat,
-            "공격속도 증가", int.MaxValue, "공격속도 +0.1")
+            "공격속도 증가", 10,
+            "공격속도 +0.1", "공격속도 +0.1", "공격속도 +0.1",
+            "공격속도 +0.1", "공격속도 +0.1", "공격속도 +0.1",
+            "공격속도 +0.1", "공격속도 +0.1", "공격속도 +0.1",
+            "공격속도 +0.1"),
+        new AugmentDefinition(AugmentId.EnemySlowRange, AugmentCategory.AutomaticSkill,
+            "얼음지대 범위 증가", 5,
+            "범위 +10%", "범위 +10%", "범위 +10%",
+            "범위 +10%", "범위 +10%"),
+        new AugmentDefinition(AugmentId.EnemyStunRange, AugmentCategory.AutomaticSkill,
+            "뇌전 범위 증가", 5,
+            "범위 +10%", "범위 +10%", "범위 +10%",
+            "범위 +10%", "범위 +10%")
     };
 
     public static AugmentDefinition Get(AugmentId id)
@@ -103,6 +127,11 @@ public static class AugmentCatalog
     public static float BarrageCooldownReduction(int level)
     {
         return level == 5 ? 15f : 2.5f * level;
+    }
+
+    public static float AutomaticSkillRangeMultiplier(int level)
+    {
+        return 1f + 0.1f * Math.Min(5, Math.Max(0, level));
     }
 
     public static float AutomaticSkillCooldown(AugmentId id, int level)

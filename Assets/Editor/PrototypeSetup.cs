@@ -10,7 +10,7 @@ public static class PrototypeSetup
 {
     private const string ScenePath = "Assets/01. Scenes/MovementPrototype.unity";
     private const string PlayerPrefabPath = "Assets/04. Prefabs/Characters/Player.prefab";
-    private const string PrototypeScenePath = "Assets/01. Scenes/Prototype.unity";
+    private const string PrototypeScenePath = "Assets/01. Scenes/Prototype_Test.unity";
     private const string PrototypePlayerPrefabPath = "Assets/04. Prefabs/Characters/PrototypePlayer.prefab";
 
     // Run once with Unity's -executeMethod PrototypeSetup.CreateProject.

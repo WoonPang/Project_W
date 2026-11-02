@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 public static class HudPrototypeSetup
 {
-    private const string ScenePath = "Assets/01. Scenes/Prototype.unity";
+    private const string ScenePath = "Assets/01. Scenes/Prototype_Test.unity";
     private const string PlayerPrefabPath = "Assets/04. Prefabs/Characters/PrototypePlayer.prefab";
     private const string HudPrefabPath = "Assets/04. Prefabs/UI/PlayerHUD.prefab";
     private const string WhiteSpritePath = "Assets/03. Asset/Sprites/WhitePixel.png";

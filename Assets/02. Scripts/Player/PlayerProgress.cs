@@ -51,7 +51,7 @@ public sealed class PlayerProgress : MonoBehaviour
         }
     }
 
-    // Kept for the EXP +10% prototype button. The amount uses the current level's requirement.
+    // Used by the Test scene's EXP +10% button.
     public void AddExperiencePercent(float percent)
     {
         if (percent > 0f)
@@ -67,6 +67,9 @@ public sealed class PlayerProgress : MonoBehaviour
     private void AdvanceLevel()
     {
         CurrentLevel++;
+        PlayerStats stats = GetComponent<PlayerStats>();
+        if (stats != null)
+            stats.ApplyLevelGrowth();
         LeveledUp?.Invoke(CurrentLevel);
     }
 }

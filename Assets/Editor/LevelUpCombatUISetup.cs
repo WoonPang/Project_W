@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public static class LevelUpCombatUISetup
 {
-    private const string ScenePath = "Assets/01. Scenes/Prototype.unity";
+    private const string ScenePath = "Assets/01. Scenes/Prototype_Test.unity";
     private const string HudPath = "Assets/04. Prefabs/UI/PlayerHUD.prefab";
     private const string PopupPath = "Assets/04. Prefabs/UI/DamagePopup.prefab";
     private const string MenuPath = "Assets/04. Prefabs/UI/LevelUpMenu.prefab";

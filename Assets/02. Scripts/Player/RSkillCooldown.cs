@@ -75,7 +75,7 @@ public sealed class RSkillCooldown : MonoBehaviour
         UpdateManualAim();
         Keyboard keyboard = Keyboard.current;
         if (keyboard != null && keyboard.rKey.wasPressedThisFrame && IsReady && !IsFiring &&
-            projectilePrefab != null && (manualAimPoint.HasValue || FindNearestVisibleDummy() != null))
+            projectilePrefab != null && (manualAimPoint.HasValue || FindNearestVisibleTarget() != null))
         {
             shotsRemaining = TotalShots;
             nextShotAt = Time.time;
@@ -98,7 +98,7 @@ public sealed class RSkillCooldown : MonoBehaviour
             }
             else
             {
-                TrainingDummy2D target = FindNearestVisibleDummy();
+                CombatTarget2D target = FindNearestVisibleTarget();
                 if (target != null)
                 {
                     Vector3 direction = (target.transform.position - transform.position).normalized;
@@ -152,6 +152,29 @@ public sealed class RSkillCooldown : MonoBehaviour
         manualAimPoint = leftButtonHeld ? worldPoint : null;
     }
 
+    public CombatTarget2D FindNearestVisibleTarget()
+    {
+        Camera camera = Camera.main;
+        if (camera == null)
+            return null;
+
+        CombatTarget2D nearest = null;
+        float nearestSqrDistance = float.PositiveInfinity;
+        foreach (CombatTarget2D target in FindObjectsByType<CombatTarget2D>(FindObjectsSortMode.None))
+        {
+            if (!IsValidTarget(target, camera))
+                continue;
+
+            float sqrDistance = (target.transform.position - transform.position).sqrMagnitude;
+            if (sqrDistance >= nearestSqrDistance)
+                continue;
+            nearest = target;
+            nearestSqrDistance = sqrDistance;
+        }
+        return nearest;
+    }
+
+    // Kept for the existing dummy-focused editor validation of Prototype_Test.
     public TrainingDummy2D FindNearestVisibleDummy()
     {
         Camera camera = Camera.main;
@@ -164,7 +187,6 @@ public sealed class RSkillCooldown : MonoBehaviour
         {
             if (!IsValidTarget(dummy, camera))
                 continue;
-
             float sqrDistance = (dummy.transform.position - transform.position).sqrMagnitude;
             if (sqrDistance >= nearestSqrDistance)
                 continue;
@@ -174,7 +196,7 @@ public sealed class RSkillCooldown : MonoBehaviour
         return nearest;
     }
 
-    private static bool IsValidTarget(TrainingDummy2D target, Camera camera)
+    private static bool IsValidTarget(CombatTarget2D target, Camera camera)
     {
         if (target == null || !target.IsAlive || camera == null)
             return false;

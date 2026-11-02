@@ -2,7 +2,7 @@ using UnityEngine;
 
 public sealed class Projectile2D : MonoBehaviour
 {
-    private TrainingDummy2D target;
+    private CombatTarget2D target;
     private float damage;
     private float speed;
     private bool isDirectional;
@@ -11,7 +11,7 @@ public sealed class Projectile2D : MonoBehaviour
 
     public bool IsDirectional => isDirectional;
 
-    public void Initialize(TrainingDummy2D newTarget, float newDamage, float newSpeed)
+    public void Initialize(CombatTarget2D newTarget, float newDamage, float newSpeed)
     {
         target = newTarget;
         damage = newDamage;
@@ -59,11 +59,11 @@ public sealed class Projectile2D : MonoBehaviour
     {
         float step = speed * Time.deltaTime;
         RaycastHit2D[] hits = Physics2D.RaycastAll(transform.position, direction, step);
-        TrainingDummy2D closestHit = null;
+        CombatTarget2D closestHit = null;
         float closestDistance = float.PositiveInfinity;
         foreach (RaycastHit2D hit in hits)
         {
-            TrainingDummy2D dummy = hit.collider.GetComponentInParent<TrainingDummy2D>();
+            CombatTarget2D dummy = hit.collider.GetComponentInParent<CombatTarget2D>();
             if (dummy == null || !dummy.IsAlive || hit.distance >= closestDistance)
                 continue;
             closestHit = dummy;

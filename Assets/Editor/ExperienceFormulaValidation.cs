@@ -16,6 +16,7 @@ public static class ExperienceFormulaValidation
         GameObject testObject = new GameObject("Experience Formula Validation");
         try
         {
+            PlayerStats stats = testObject.AddComponent<PlayerStats>();
             PlayerProgress progress = testObject.AddComponent<PlayerProgress>();
             progress.ResetProgress();
             progress.AddExperience(7.5f);
@@ -32,6 +33,11 @@ public static class ExperienceFormulaValidation
 
             progress.LevelUpImmediately();
             CheckProgress(progress, 5, 0f, 140f);
+            if (!Mathf.Approximately(stats.MaxHealth, 160f) ||
+                !Mathf.Approximately(stats.AttackDamage, 20f) ||
+                !Mathf.Approximately(stats.MoveSpeed, 1.1f) ||
+                !Mathf.Approximately(stats.AttackSpeed, 1.1f))
+                throw new InvalidOperationException("Level-up base stat growth was not applied on every level.");
         }
         finally
         {

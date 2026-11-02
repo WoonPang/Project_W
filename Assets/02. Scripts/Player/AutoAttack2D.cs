@@ -25,7 +25,7 @@ public sealed class AutoAttack2D : MonoBehaviour
         if (Time.timeScale <= 0f || projectilePrefab == null || Time.time < nextAttackTime)
             return;
 
-        TrainingDummy2D target = FindNearestDummy();
+        CombatTarget2D target = FindNearestTarget();
         if (target == null)
             return;
 
@@ -36,12 +36,12 @@ public sealed class AutoAttack2D : MonoBehaviour
         nextAttackTime = Time.time + 1f / Mathf.Max(0.01f, stats.AttackSpeed);
     }
 
-    private TrainingDummy2D FindNearestDummy()
+    private CombatTarget2D FindNearestTarget()
     {
-        TrainingDummy2D nearest = null;
+        CombatTarget2D nearest = null;
         float nearestSqrDistance = attackRange * attackRange;
 
-        foreach (TrainingDummy2D dummy in FindObjectsByType<TrainingDummy2D>(FindObjectsSortMode.None))
+        foreach (CombatTarget2D dummy in FindObjectsByType<CombatTarget2D>(FindObjectsSortMode.None))
         {
             if (!dummy.IsAlive)
                 continue;

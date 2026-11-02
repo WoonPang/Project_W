@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 
 public static class CombatPrototypeSetup
 {
-    private const string ScenePath = "Assets/01. Scenes/Prototype.unity";
+    private const string ScenePath = "Assets/01. Scenes/Prototype_Test.unity";
     private const string PlayerPrefabPath = "Assets/04. Prefabs/Characters/PrototypePlayer.prefab";
     private const string ProjectilePrefabPath = "Assets/04. Prefabs/Projectiles/AutoAttackProjectile.prefab";
     private const string DummyPrefabPath = "Assets/04. Prefabs/Targets/TrainingDummy.prefab";

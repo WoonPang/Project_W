@@ -6,6 +6,11 @@ public sealed class PlayerStats : MonoBehaviour
     [SerializeField, Min(0f)] private float attackDamage = 10f;
     [SerializeField, Min(0f)] private float moveSpeed = 1f;
     [SerializeField, Min(0.01f)] private float attackSpeed = 1f;
+    [Header("Gains per character level")]
+    [SerializeField, Min(0f)] private float healthPerLevel = 15f;
+    [SerializeField, Min(0f)] private float attackDamagePerLevel = 2.5f;
+    [SerializeField, Min(0f)] private float moveSpeedPerLevel = 0.025f;
+    [SerializeField, Min(0f)] private float attackSpeedPerLevel = 0.025f;
 
     public float MaxHealth => maxHealth;
     public float CurrentHealth { get; private set; }
@@ -58,5 +63,13 @@ public sealed class PlayerStats : MonoBehaviour
     public void AddAttackSpeed(float amount)
     {
         attackSpeed = Mathf.Max(0.01f, attackSpeed + amount);
+    }
+
+    public void ApplyLevelGrowth()
+    {
+        AddMaxHealth(healthPerLevel);
+        AddAttackDamage(attackDamagePerLevel);
+        AddMoveSpeed(moveSpeedPerLevel);
+        AddAttackSpeed(attackSpeedPerLevel);
     }
 }

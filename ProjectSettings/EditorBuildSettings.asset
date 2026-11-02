@@ -6,7 +6,10 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/01. Scenes/Prototype.unity
+    path: Assets/01. Scenes/Prototype_Play.unity
+    guid: e5a2a40e3db664398a14d25bbb5edd66
+  - enabled: 0
+    path: Assets/01. Scenes/Prototype_Test.unity
     guid: 298733fe8b4b47f497faba685f640ced
   - enabled: 0
     path: Assets/01. Scenes/MovementPrototype.unity

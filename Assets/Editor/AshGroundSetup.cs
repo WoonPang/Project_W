@@ -6,7 +6,7 @@ using UnityEngine;
 
 public static class AshGroundSetup
 {
-    private const string ScenePath = "Assets/01. Scenes/Prototype.unity";
+    private const string ScenePath = "Assets/01. Scenes/Prototype_Test.unity";
     private const string TexturePath = "Assets/03. Asset/Sprites/AshGroundTile.png";
     private const int TextureSize = 1024;
     private const float PixelsPerUnit = 40f;

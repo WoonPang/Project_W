@@ -26,6 +26,10 @@ public sealed class PlayerAugments : MonoBehaviour
 
     public bool CanUpgrade(AugmentId id)
     {
+        if (id == AugmentId.EnemySlowRange && GetLevel(AugmentId.EnemySlow) == 0)
+            return false;
+        if (id == AugmentId.EnemyStunRange && GetLevel(AugmentId.EnemyStun) == 0)
+            return false;
         return GetLevel(id) < AugmentCatalog.Get(id).MaxLevel;
     }
 
@@ -43,8 +47,8 @@ public sealed class PlayerAugments : MonoBehaviour
                 coreUpgradeAvailable = true;
         }
 
-        if (eligible.Count < 3)
-            throw new InvalidOperationException("At least three augments must remain available.");
+        if (eligible.Count == 0)
+            throw new InvalidOperationException("No augments remain available.");
 
         for (int index = eligible.Count - 1; index > 0; index--)
         {
@@ -52,7 +56,8 @@ public sealed class PlayerAugments : MonoBehaviour
             (eligible[index], eligible[other]) = (eligible[other], eligible[index]);
         }
 
-        if (coreUpgradeAvailable && IsStat(eligible[0]) && IsStat(eligible[1]) &&
+        int offerCount = Mathf.Min(3, eligible.Count);
+        if (offerCount == 3 && coreUpgradeAvailable && IsStat(eligible[0]) && IsStat(eligible[1]) &&
             IsStat(eligible[2]))
         {
             int nonStat = eligible.FindIndex(3, id => !IsStat(id));
@@ -63,7 +68,7 @@ public sealed class PlayerAugments : MonoBehaviour
                 (eligible[nonStat], eligible[replacement]);
         }
 
-        return new[] { eligible[0], eligible[1], eligible[2] };
+        return eligible.GetRange(0, offerCount).ToArray();
     }
 
     public void Apply(AugmentId id)
@@ -99,12 +104,12 @@ public sealed class PlayerAugments : MonoBehaviour
                 stats.AddAttackDamage(10f);
                 break;
             case AugmentId.MoveSpeed:
-                stats.AddMoveSpeed(0.1f);
+                stats.AddMoveSpeed(0.05f);
                 break;
             case AugmentId.AttackSpeed:
                 stats.AddAttackSpeed(0.1f);
                 break;
-            // Shield, slow, and stun read their current levels from this component.
+            // Shield, slow, stun, and their range upgrades read levels from this component.
         }
         AugmentApplied?.Invoke(id, levels[(int)id]);
     }

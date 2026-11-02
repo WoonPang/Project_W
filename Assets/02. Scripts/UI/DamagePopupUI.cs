@@ -23,7 +23,7 @@ public sealed class DamagePopupUI : MonoBehaviour
         rect = GetComponent<RectTransform>();
         startPosition = position;
         rect.anchoredPosition = position;
-        damageText.text = damage.ToString("0.#");
+        damageText.text = damage.ToString("0.##");
         rect.localScale = Vector3.one * 0.65f;
         canvasGroup.alpha = 1f;
     }

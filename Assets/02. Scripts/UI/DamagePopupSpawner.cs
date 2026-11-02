@@ -20,15 +20,15 @@ public sealed class DamagePopupSpawner : MonoBehaviour
 
     private void OnEnable()
     {
-        TrainingDummy2D.Damaged += OnDummyDamaged;
+        CombatTarget2D.Damaged += OnTargetDamaged;
     }
 
     private void OnDisable()
     {
-        TrainingDummy2D.Damaged -= OnDummyDamaged;
+        CombatTarget2D.Damaged -= OnTargetDamaged;
     }
 
-    private void OnDummyDamaged(float damage, Vector3 worldPosition)
+    private void OnTargetDamaged(float damage, Vector3 worldPosition)
     {
         if (popupPrefab == null || worldCamera == null || damage <= 0f)
             return;

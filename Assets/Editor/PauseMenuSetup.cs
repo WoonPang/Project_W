@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public static class PauseMenuSetup
 {
-    private const string ScenePath = "Assets/01. Scenes/Prototype.unity";
+    private const string ScenePath = "Assets/01. Scenes/Prototype_Test.unity";
     private const string HudPrefabPath = "Assets/04. Prefabs/UI/PlayerHUD.prefab";
     private const string PausePrefabPath = "Assets/04. Prefabs/UI/PauseMenu.prefab";
     private const string WhiteSpritePath = "Assets/03. Asset/Sprites/WhitePixel.png";

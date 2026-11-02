@@ -4,7 +4,6 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerAugments))]
 public sealed class PlayerAutomaticAugments2D : MonoBehaviour
 {
-    [SerializeField, Min(0.5f)] private float shieldRadius = 0.9f;
     [SerializeField, Min(0.5f)] private float slowRadius = 3f;
     [SerializeField, Min(0.1f)] private float slowDuration = 7f;
     [SerializeField, Min(0.5f)] private float stunRadius = 3f;
@@ -13,7 +12,6 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
 
     private readonly List<EnemyStatus2D> slowedTargets = new List<EnemyStatus2D>();
     private PlayerAugments augments;
-    private SpriteRenderer shieldRing;
     private SpriteRenderer slowRing;
     private SpriteRenderer stunOutline;
     private SpriteRenderer stunChargeFill;
@@ -37,13 +35,22 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
     public float StunChargeRemaining => stunCharging ? Mathf.Max(0f, stunStrikeAt - Time.time) : 0f;
     public float StunCooldownRemaining => Mathf.Max(0f, nextStunAt - Time.time);
     public float ShieldCooldownRemaining => Mathf.Max(0f, shieldReadyAt - Time.time);
+    public float SlowEffectRadius => slowRadius * AugmentCatalog.AutomaticSkillRangeMultiplier(
+        GetAugmentLevel(AugmentId.EnemySlowRange));
+    public float StunEffectRadius => stunRadius * AugmentCatalog.AutomaticSkillRangeMultiplier(
+        GetAugmentLevel(AugmentId.EnemyStunRange));
+
+    private int GetAugmentLevel(AugmentId id)
+    {
+        if (augments == null)
+            augments = GetComponent<PlayerAugments>();
+        return augments != null ? augments.GetLevel(id) : 0;
+    }
 
     private void Awake()
     {
         augments = GetComponent<PlayerAugments>();
         CreateCircleSprites();
-        shieldRing = CreateRing("Shield Ready Ring", shieldRadius,
-            new Color(0.12f, 0.4f, 1f, 0.9f), 12);
         slowRing = CreateRing("Slow Field Ring", slowRadius,
             new Color(0.3f, 0.9f, 1f, 0.75f), 8);
         stunOutline = CreateRing("Thunder Warning Outline", stunRadius,
@@ -57,14 +64,6 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
         if (Time.timeScale <= 0f)
             return;
 
-        if (shieldRing != null)
-        {
-            shieldRing.enabled = ShieldReady;
-            if (ShieldReady)
-                shieldRing.color = new Color(0.12f, 0.4f, 1f,
-                    0.72f + 0.18f * Mathf.Sin(Time.time * 4f));
-        }
-
         UpdateSlow();
         UpdateStun();
         UpdateStunTelegraph();
@@ -77,8 +76,6 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
 
         shieldReadyAt = Time.time + AugmentCatalog.AutomaticSkillCooldown(
             AugmentId.Shield, augments.GetLevel(AugmentId.Shield));
-        if (shieldRing != null)
-            shieldRing.enabled = false;
         return true;
     }
 
@@ -101,12 +98,14 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
 
         bool active = level > 0 && SlowActive;
         slowRing.enabled = active;
+        float currentRadius = SlowEffectRadius;
+        slowRing.transform.localScale = Vector3.one * (currentRadius * 2f);
         if (!active)
             return;
 
         float alpha = CalculateSlowFieldOpacity(SlowActiveRemaining);
         slowRing.color = new Color(0.3f, 0.9f, 1f, alpha);
-        float radiusSquared = slowRadius * slowRadius;
+        float radiusSquared = currentRadius * currentRadius;
         foreach (EnemyStatus2D target in FindObjectsByType<EnemyStatus2D>(FindObjectsSortMode.None))
         {
             if (!IsLiveTarget(target) ||
@@ -159,7 +158,7 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
 
     private bool HasNearbyTarget()
     {
-        float radiusSquared = stunRadius * stunRadius;
+        float radiusSquared = StunEffectRadius * StunEffectRadius;
         foreach (EnemyStatus2D target in FindObjectsByType<EnemyStatus2D>(FindObjectsSortMode.None))
         {
             if (IsLiveTarget(target) &&
@@ -172,7 +171,7 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
     private bool StrikeNearbyTargets()
     {
         bool hitAny = false;
-        float radiusSquared = stunRadius * stunRadius;
+        float radiusSquared = StunEffectRadius * StunEffectRadius;
         foreach (EnemyStatus2D target in FindObjectsByType<EnemyStatus2D>(FindObjectsSortMode.None))
         {
             if (!IsLiveTarget(target) ||
@@ -187,6 +186,8 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
 
     private void UpdateStunTelegraph()
     {
+        float currentRadius = StunEffectRadius;
+        stunOutline.transform.localScale = Vector3.one * (currentRadius * 2f);
         stunOutline.enabled = stunCharging;
         stunChargeFill.enabled = stunCharging;
         if (!stunCharging)
@@ -194,7 +195,7 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
 
         float progress = Mathf.Clamp01(1f - StunChargeRemaining / stunWindup);
         stunChargeFill.transform.localScale = Vector3.one *
-                                              (stunRadius * 2f * Mathf.Max(0.02f, progress));
+                                              (currentRadius * 2f * Mathf.Max(0.02f, progress));
         stunChargeFill.color = new Color(1f, 0.83f, 0.1f, 0.62f);
     }
 
@@ -202,8 +203,8 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
     {
         if (status == null || !status.isActiveAndEnabled)
             return false;
-        TrainingDummy2D dummy = status.GetComponent<TrainingDummy2D>();
-        return dummy == null || dummy.IsAlive;
+        CombatTarget2D target = status.GetComponent<CombatTarget2D>();
+        return target == null || target.IsAlive;
     }
 
     private SpriteRenderer CreateRing(string name, float radius, Color color,

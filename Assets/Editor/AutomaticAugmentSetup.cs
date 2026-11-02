@@ -9,7 +9,7 @@ public static class AutomaticAugmentSetup
     private const string PlayerPath = "Assets/04. Prefabs/Characters/PrototypePlayer.prefab";
     private const string DummyPath = "Assets/04. Prefabs/Targets/TrainingDummy.prefab";
     private const string HudPath = "Assets/04. Prefabs/UI/PlayerHUD.prefab";
-    private const string ScenePath = "Assets/01. Scenes/Prototype.unity";
+    private const string ScenePath = "Assets/01. Scenes/Prototype_Test.unity";
 
     public static void Apply()
     {

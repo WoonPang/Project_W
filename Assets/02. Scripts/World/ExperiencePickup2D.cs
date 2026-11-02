@@ -19,6 +19,12 @@ public sealed class ExperiencePickup2D : MonoBehaviour
         currentPullSpeed = initialPullSpeed;
     }
 
+    public void Initialize(PlayerProgress playerProgress, float value)
+    {
+        experienceValue = Mathf.Max(0.1f, value);
+        Initialize(playerProgress);
+    }
+
     private void Update()
     {
         if (Time.timeScale <= 0f)

@@ -1,7 +1,6 @@
-using System;
 using UnityEngine;
 
-public sealed class TrainingDummy2D : MonoBehaviour
+public sealed class TrainingDummy2D : CombatTarget2D
 {
     [SerializeField, Min(1f)] private float maxHealth = 200f;
     [SerializeField, Min(0f)] private float respawnDelay = 2.5f;
@@ -13,10 +12,9 @@ public sealed class TrainingDummy2D : MonoBehaviour
     private Color originalBodyColor;
     private EnemyStatus2D status;
 
-    public bool IsAlive => currentHealth > 0f;
+    public override bool IsAlive => currentHealth > 0f;
     public float MaxHealth => maxHealth;
     public float CurrentHealth => currentHealth;
-    public static event Action<float, Vector3> Damaged;
 
     public void Configure(SpriteRenderer body, SpriteRenderer healthFill)
     {
@@ -48,14 +46,14 @@ public sealed class TrainingDummy2D : MonoBehaviour
                     : originalBodyColor;
     }
 
-    public void TakeDamage(float amount)
+    public override void TakeDamage(float amount)
     {
         if (!IsAlive || amount <= 0f)
             return;
 
         float actualDamage = Mathf.Min(currentHealth, amount);
         currentHealth = Mathf.Max(0f, currentHealth - amount);
-        Damaged?.Invoke(actualDamage, transform.position + Vector3.up * 1.1f);
+        ReportDamage(actualDamage, transform.position + Vector3.up * 1.1f);
         UpdateHealthBar();
 
         if (!IsAlive)

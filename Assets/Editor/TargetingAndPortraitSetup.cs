@@ -7,7 +7,7 @@ using UnityEngine.UI;
 public static class TargetingAndPortraitSetup
 {
     private const string HudPath = "Assets/04. Prefabs/UI/PlayerHUD.prefab";
-    private const string ScenePath = "Assets/01. Scenes/Prototype.unity";
+    private const string ScenePath = "Assets/01. Scenes/Prototype_Test.unity";
 
     public static void Apply()
     {
