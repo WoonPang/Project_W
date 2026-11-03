@@ -132,7 +132,7 @@ public sealed class AssassinMeleeEnemy2D : CombatTarget2D, ILevelScaledEnemyHeal
         if (playerProgress == null)
             playerProgress = FindFirstObjectByType<PlayerProgress>();
         if (playerProgress != null)
-            playerProgress.AddExperience(experienceOnDeath);
+            playerProgress.RegisterEnemyKill(experienceOnDeath);
         Destroy(gameObject);
     }
 

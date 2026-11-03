@@ -22,6 +22,8 @@ public sealed class PlayerDamageFeedbackUI : MonoBehaviour
     private float flashRemaining;
     private float deathElapsed;
     private float renderedDeathProgress = -1f;
+    public bool DeathFadeComplete => stats != null && stats.CurrentHealth <= 0f &&
+        deathElapsed >= deathFadeDuration;
 
     private void Awake()
     {

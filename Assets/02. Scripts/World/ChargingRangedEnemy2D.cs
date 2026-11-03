@@ -292,7 +292,7 @@ public sealed class ChargingRangedEnemy2D : CombatTarget2D, ILevelScaledEnemyHea
         if (playerProgress == null)
             playerProgress = FindFirstObjectByType<PlayerProgress>();
         if (playerProgress != null)
-            playerProgress.AddExperience(experienceOnDeath);
+            playerProgress.RegisterEnemyKill(experienceOnDeath);
         Destroy(gameObject);
     }
 

@@ -8,6 +8,7 @@ public sealed class PlayerProgress : MonoBehaviour
 
     public int CurrentLevel { get; private set; }
     public float CurrentExperience { get; private set; }
+    public int EnemiesDefeated { get; private set; }
     public float ExperienceToNextLevel => ExperienceRequiredForLevel(CurrentLevel);
     public float ExperienceRemaining => Mathf.Max(0f, ExperienceToNextLevel - CurrentExperience);
     public float ExperiencePercent => ExperienceToNextLevel > 0f
@@ -35,6 +36,7 @@ public sealed class PlayerProgress : MonoBehaviour
     {
         CurrentLevel = Mathf.Max(1, startingLevel);
         CurrentExperience = 0f;
+        EnemiesDefeated = 0;
         AddExperience(startingExperience);
         EnemyHealthScaling2D.SyncExistingEnemies(CurrentLevel);
     }
@@ -50,6 +52,12 @@ public sealed class PlayerProgress : MonoBehaviour
             CurrentExperience -= ExperienceToNextLevel;
             AdvanceLevel();
         }
+    }
+
+    public void RegisterEnemyKill(float experience)
+    {
+        EnemiesDefeated++;
+        AddExperience(experience);
     }
 
     // Used by the Test scene's EXP +10% button.

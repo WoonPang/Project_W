@@ -149,7 +149,7 @@ public sealed class PlayerHudUI : MonoBehaviour
     private void RemoveHealth()
     {
         if (playerStats != null)
-            playerStats.ReceiveDamage(10f);
+            playerStats.AdjustHealth(-10f);
         Refresh();
     }
 

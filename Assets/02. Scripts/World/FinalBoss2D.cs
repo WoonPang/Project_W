@@ -1,8 +1,10 @@
+using Action = System.Action;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(CircleCollider2D), typeof(EnemyStatus2D))]
 public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
 {
+    public static event Action Defeated;
     private enum BossAction { Chasing, LaserWarning, LaserFiring, MeteorStorm, SummonWarning }
 
     [SerializeField, Min(1f)] private float maxHealth = 500f;
@@ -521,7 +523,8 @@ public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
         if (playerProgress == null)
             playerProgress = FindFirstObjectByType<PlayerProgress>();
         if (playerProgress != null)
-            playerProgress.AddExperience(experienceOnDeath);
+            playerProgress.RegisterEnemyKill(experienceOnDeath);
+        Defeated?.Invoke();
         Destroy(gameObject);
     }
 

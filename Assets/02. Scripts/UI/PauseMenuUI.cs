@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public sealed class PauseMenuUI : MonoBehaviour
@@ -39,7 +40,7 @@ public sealed class PauseMenuUI : MonoBehaviour
 
         resumeButton.onClick.AddListener(ResumeGame);
         optionButton.onClick.AddListener(OpenOptions);
-        quitButton.onClick.AddListener(QuitGame);
+        quitButton.onClick.AddListener(ReturnToLobby);
         backButton.onClick.AddListener(ShowMainPanel);
     }
 
@@ -94,14 +95,11 @@ public sealed class PauseMenuUI : MonoBehaviour
         mainPanel.SetActive(true);
     }
 
-    private void QuitGame()
+    private void ReturnToLobby()
     {
-        Time.timeScale = timeScaleBeforePause;
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-        Application.Quit();
-#endif
+        isPaused = false;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("Prototype_Lobby");
     }
 
     private void OnDestroy()
@@ -111,7 +109,7 @@ public sealed class PauseMenuUI : MonoBehaviour
         if (optionButton != null)
             optionButton.onClick.RemoveListener(OpenOptions);
         if (quitButton != null)
-            quitButton.onClick.RemoveListener(QuitGame);
+            quitButton.onClick.RemoveListener(ReturnToLobby);
         if (backButton != null)
             backButton.onClick.RemoveListener(ShowMainPanel);
         if (isPaused)

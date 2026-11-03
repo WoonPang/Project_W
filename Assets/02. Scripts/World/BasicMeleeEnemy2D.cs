@@ -120,7 +120,7 @@ public sealed class BasicMeleeEnemy2D : CombatTarget2D, ILevelScaledEnemyHealth
         if (playerProgress == null)
             playerProgress = FindFirstObjectByType<PlayerProgress>();
         if (playerProgress != null)
-            playerProgress.AddExperience(experienceOnDeath);
+            playerProgress.RegisterEnemyKill(experienceOnDeath);
         Destroy(gameObject);
     }
 
