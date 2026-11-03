@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public sealed class PlayerStats : MonoBehaviour
@@ -7,16 +8,24 @@ public sealed class PlayerStats : MonoBehaviour
     [SerializeField, Min(0f)] private float moveSpeed = 1f;
     [SerializeField, Min(0.01f)] private float attackSpeed = 1f;
     [Header("Gains per character level")]
-    [SerializeField, Min(0f)] private float healthPerLevel = 15f;
+    [SerializeField, Min(0f)] private float healthPerLevel = 5f;
     [SerializeField, Min(0f)] private float attackDamagePerLevel = 2.5f;
     [SerializeField, Min(0f)] private float moveSpeedPerLevel = 0.025f;
     [SerializeField, Min(0f)] private float attackSpeedPerLevel = 0.025f;
+    [SerializeField, Min(0f)] private float invulnerabilitySeconds = 3f;
+
+    private float invulnerableUntil;
+    private bool debugInvincible;
 
     public float MaxHealth => maxHealth;
     public float CurrentHealth { get; private set; }
     public float AttackDamage => attackDamage;
     public float MoveSpeed => moveSpeed;
     public float AttackSpeed => attackSpeed;
+    public bool IsInvulnerable => Time.time < invulnerableUntil;
+    public bool IsDebugInvincible => debugInvincible;
+    public float InvulnerabilityRemaining => Mathf.Max(0f, invulnerableUntil - Time.time);
+    public event Action<float> Damaged;
 
     private void Awake()
     {
@@ -28,17 +37,32 @@ public sealed class PlayerStats : MonoBehaviour
         CurrentHealth = Mathf.Clamp(CurrentHealth + amount, 0f, maxHealth);
     }
 
+    public void SetDebugInvincible(bool enabled)
+    {
+        debugInvincible = enabled;
+    }
+
     public bool ReceiveDamage(float amount)
     {
-        if (amount <= 0f || CurrentHealth <= 0f)
+        if (amount <= 0f || CurrentHealth <= 0f || IsInvulnerable || debugInvincible)
             return false;
 
         PlayerAutomaticAugments2D skills = GetComponent<PlayerAutomaticAugments2D>();
         if (skills != null && skills.TryBlockHit())
+        {
+            StartInvulnerability();
             return false;
+        }
 
         AdjustHealth(-amount);
+        StartInvulnerability();
+        Damaged?.Invoke(amount);
         return true;
+    }
+
+    private void StartInvulnerability()
+    {
+        invulnerableUntil = Time.time + invulnerabilitySeconds;
     }
 
     public void AddAttackDamage(float amount)

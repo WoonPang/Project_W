@@ -119,6 +119,114 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &44304585
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 44304587}
+  - component: {fileID: 44304586}
+  m_Layer: 0
+  m_Name: Assassin Melee Enemy Spawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &44304586
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 44304585}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ed97434ff00c43f48622c5183ac0553, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::AssassinMeleeEnemySpawner2D
+  enemyPrefab: {fileID: 3440367442637339137, guid: 3c12f746b343e4e6caa0587004851e50, type: 3}
+  worldCamera: {fileID: 197123192}
+  player: {fileID: 158897673}
+  firstSpawnAfterSeconds: 420
+  initialSpawnInterval: 7
+  minimumSpawnInterval: 4
+  rampSeconds: 360
+  maximumAlive: 8
+  outsideViewMargin: 1.5
+  minimumPlayerDistance: 7
+--- !u!4 &44304587
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 44304585}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &60923417
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 60923419}
+  - component: {fileID: 60923418}
+  m_Layer: 0
+  m_Name: Charging Ranged Enemy Spawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &60923418
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 60923417}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b4010074758a4fdca272bfffd44eb95, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ChargingRangedEnemySpawner2D
+  enemyPrefab: {fileID: 1728318163709686632, guid: 5e89c39a5316d40c0b6ab4b55532299d, type: 3}
+  worldCamera: {fileID: 197123192}
+  player: {fileID: 158897673}
+  firstSpawnAfterSeconds: 540
+  initialSpawnInterval: 12
+  minimumSpawnInterval: 6
+  rampSeconds: 360
+  maximumAlive: 6
+  outsideViewMargin: 1.5
+  minimumPlayerDistance: 7
+--- !u!4 &60923419
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 60923417}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &91336608
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -727,6 +835,104 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: cee35f280ebaa4b198afd1bdb9bbd3d2, type: 3}
+--- !u!1 &957658113
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 957658115}
+  - component: {fileID: 957658114}
+  m_Layer: 0
+  m_Name: Mid Boss Spawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &957658114
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 957658113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 943034baeaefc4bf185611172bdad5dc, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::MidBossSpawner2D
+  bossPrefab: {fileID: 7320401556910836174, guid: dee21a29dd82a4785a120bc78f07f4d9, type: 3}
+  worldCamera: {fileID: 197123192}
+  player: {fileID: 158897673}
+  firstSpawnAfterSeconds: 300
+  spawnCount: 2
+  secondSpawnAfterSeconds: 600
+  secondSpawnCount: 3
+  bossSeparation: 3.5
+  outsideViewMargin: 2
+  minimumPlayerDistance: 8
+--- !u!4 &957658115
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 957658113}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &960020410
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 960020412}
+  - component: {fileID: 960020411}
+  m_Layer: 0
+  m_Name: Game Session Time
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &960020411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 960020410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f368be1c651c241399bc3d3d0b48afd9, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::GameSessionTime2D
+--- !u!4 &960020412
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 960020410}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &960495670
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1030,6 +1236,110 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1491135121
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1491135123}
+  - component: {fileID: 1491135122}
+  m_Layer: 0
+  m_Name: Final Boss Spawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1491135122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1491135121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 981d85c8c05c4471bbfad93a581eed47, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::FinalBossSpawner2D
+  bossPrefab: {fileID: 929173035420205219, guid: 802db41f8053447ac81e3843b827784f, type: 3}
+  worldCamera: {fileID: 197123192}
+  player: {fileID: 158897673}
+  spawnAfterSeconds: 900
+  outsideViewMargin: 2.5
+  minimumPlayerDistance: 9
+--- !u!4 &1491135123
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1491135121}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2011299929
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2011299931}
+  - component: {fileID: 2011299930}
+  m_Layer: 0
+  m_Name: Tank Melee Enemy Spawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2011299930
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2011299929}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 882cd29521ee042c2961e5d4a6433616, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::TankMeleeEnemySpawner2D
+  enemyPrefab: {fileID: 4922189629186647855, guid: 54e869764d1bf422ca2b3e395d608e49, type: 3}
+  worldCamera: {fileID: 197123192}
+  player: {fileID: 158897673}
+  firstSpawnAfterSeconds: 180
+  initialSpawnInterval: 8
+  minimumSpawnInterval: 4
+  rampSeconds: 360
+  maximumAlive: 8
+  outsideViewMargin: 1.5
+  minimumPlayerDistance: 7
+--- !u!4 &2011299931
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2011299929}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -1044,3 +1354,9 @@ SceneRoots:
   - {fileID: 91336608}
   - {fileID: 1166821806}
   - {fileID: 1054396616}
+  - {fileID: 960020412}
+  - {fileID: 2011299931}
+  - {fileID: 60923419}
+  - {fileID: 44304587}
+  - {fileID: 957658115}
+  - {fileID: 1491135123}

@@ -14,8 +14,17 @@ public sealed class BasicMeleeEnemySpawner2D : MonoBehaviour
 
     private float elapsedSeconds;
     private float nextSpawnIn;
+    private GameSessionTime2D sessionTime;
 
-    public float ElapsedSeconds => elapsedSeconds;
+    public float ElapsedSeconds
+    {
+        get
+        {
+            if (sessionTime == null)
+                sessionTime = FindFirstObjectByType<GameSessionTime2D>();
+            return sessionTime != null ? sessionTime.ElapsedSeconds : elapsedSeconds;
+        }
+    }
     public int MaximumAlive => maximumAlive;
 
     public void Configure(BasicMeleeEnemy2D prefab, Camera camera, PlayerStats target)
@@ -35,11 +44,12 @@ public sealed class BasicMeleeEnemySpawner2D : MonoBehaviour
 
     private void Update()
     {
-        if (Time.timeScale <= 0f || enemyPrefab == null || worldCamera == null || player == null ||
+        if (Time.timeScale <= 0f || MonsterSpawnGate2D.IsPaused || enemyPrefab == null || worldCamera == null || player == null ||
             player.CurrentHealth <= 0f)
             return;
 
-        elapsedSeconds += Time.deltaTime;
+        if (sessionTime == null)
+            elapsedSeconds += Time.deltaTime;
         nextSpawnIn -= Time.deltaTime;
         if (nextSpawnIn > 0f)
             return;
@@ -47,7 +57,7 @@ public sealed class BasicMeleeEnemySpawner2D : MonoBehaviour
         if (FindObjectsByType<BasicMeleeEnemy2D>(FindObjectsSortMode.None).Length < maximumAlive)
             SpawnOne();
 
-        float progress = Mathf.Clamp01(elapsedSeconds / rampSeconds);
+        float progress = Mathf.Clamp01(ElapsedSeconds / rampSeconds);
         nextSpawnIn = Mathf.Lerp(initialSpawnInterval, minimumSpawnInterval, progress);
     }
 

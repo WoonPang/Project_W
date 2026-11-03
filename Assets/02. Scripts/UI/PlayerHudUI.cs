@@ -298,9 +298,10 @@ public sealed class PlayerHudUI : MonoBehaviour
         float requiredExperience = playerProgress != null ? playerProgress.ExperienceToNextLevel : 100f;
         experienceFill.fillAmount = requiredExperience > 0f
             ? Mathf.Clamp01(currentExperience / requiredExperience) : 0f;
-        int experiencePercent = playerProgress != null
-            ? Mathf.FloorToInt(Mathf.Clamp(playerProgress.ExperiencePercent, 0f, 99.999f)) : 0;
-        experienceText.text = $"EXP {experiencePercent}%";
+        float experiencePercent = playerProgress != null
+            ? Mathf.Min(99.9f, Mathf.Round(Mathf.Max(0f,
+                playerProgress.ExperiencePercent) * 10f) / 10f) : 0f;
+        experienceText.text = $"EXP {experiencePercent.ToString("0.0", CultureInfo.InvariantCulture)}%";
         if (levelText != null)
             levelText.text = playerProgress != null ? playerProgress.CurrentLevel.ToString() : "1";
 

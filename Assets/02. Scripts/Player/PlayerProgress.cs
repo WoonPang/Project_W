@@ -36,6 +36,7 @@ public sealed class PlayerProgress : MonoBehaviour
         CurrentLevel = Mathf.Max(1, startingLevel);
         CurrentExperience = 0f;
         AddExperience(startingExperience);
+        EnemyHealthScaling2D.SyncExistingEnemies(CurrentLevel);
     }
 
     public void AddExperience(float amount)
@@ -70,6 +71,7 @@ public sealed class PlayerProgress : MonoBehaviour
         PlayerStats stats = GetComponent<PlayerStats>();
         if (stats != null)
             stats.ApplyLevelGrowth();
+        EnemyHealthScaling2D.SyncExistingEnemies(CurrentLevel);
         LeveledUp?.Invoke(CurrentLevel);
     }
 }

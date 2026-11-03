@@ -1,15 +1,16 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(CircleCollider2D), typeof(EnemyStatus2D))]
-public sealed class BasicRangedEnemy2D : CombatTarget2D
+public sealed class BasicRangedEnemy2D : CombatTarget2D, ILevelScaledEnemyHealth
 {
-    [SerializeField, Min(1f)] private float maxHealth = 20f;
+    [SerializeField, Min(1f)] private float maxHealth = 15f;
     [SerializeField, Min(0f)] private float attackDamage = 7f;
     [SerializeField, Min(0f)] private float moveSpeed = 1f;
     [SerializeField, Min(0f)] private float experienceOnDeath = 5f;
     [SerializeField, Min(0.1f)] private float attackInterval = 1.6f;
     [SerializeField, Min(0.1f)] private float attackRange = 7f;
     [SerializeField, Min(0.1f)] private float preferredDistance = 4f;
+    [SerializeField, Min(0f)] private float screenEdgeInset = 2.5f;
     [SerializeField, Min(0.1f)] private float worldUnitsPerMoveSpeed = 5f;
     [SerializeField, Min(1f)] private float despawnDistance = 30f;
     [SerializeField] private SpriteRenderer bodyRenderer;
@@ -29,6 +30,7 @@ public sealed class BasicRangedEnemy2D : CombatTarget2D
     public float AttackDamage => attackDamage;
     public float MoveSpeed => moveSpeed;
     public float ExperienceOnDeath => experienceOnDeath;
+    public float ScreenEdgeInset => screenEdgeInset;
 
     public void Configure(SpriteRenderer enemyBody, SpriteRenderer healthFill,
         EnemyProjectile2D projectile)
@@ -36,6 +38,15 @@ public sealed class BasicRangedEnemy2D : CombatTarget2D
         bodyRenderer = enemyBody;
         healthFillRenderer = healthFill;
         projectilePrefab = projectile;
+    }
+
+    public void ApplyLevelHealth(int level)
+    {
+        float targetMaximum = EnemyHealthScaling2D.MaxHealth(EnemyHealthKind.BasicRanged, level);
+        currentHealth = EnemyHealthScaling2D.ScaleRemainingHealth(
+            currentHealth, maxHealth, targetMaximum);
+        maxHealth = targetMaximum;
+        UpdateHealthBar();
     }
 
     private void Awake()
@@ -46,7 +57,7 @@ public sealed class BasicRangedEnemy2D : CombatTarget2D
         if (player != null)
             playerProgress = player.GetComponent<PlayerProgress>();
         currentHealth = maxHealth;
-        UpdateHealthBar();
+        ApplyLevelHealth(EnemyHealthScaling2D.CurrentPlayerLevel());
     }
 
     private void Update()
@@ -68,7 +79,7 @@ public sealed class BasicRangedEnemy2D : CombatTarget2D
             Destroy(gameObject);
             return;
         }
-        if (distance <= attackRange && player.CurrentHealth > 0f &&
+        if (distance <= attackRange && IsInsideAttackArea() && player.CurrentHealth > 0f &&
             Time.time >= nextAttackAt && (status == null || !status.IsStunned) &&
             projectilePrefab != null)
         {
@@ -92,20 +103,35 @@ public sealed class BasicRangedEnemy2D : CombatTarget2D
             return;
         Vector2 difference = (Vector2)player.transform.position - body.position;
         float distance = difference.magnitude;
-        if (distance <= preferredDistance)
+        float stoppingDistance = IsInsideAttackArea() ? preferredDistance : 0f;
+        if (distance <= stoppingDistance || distance <= 0.001f)
             return;
         float multiplier = status != null ? status.MovementMultiplier : 1f;
         float step = moveSpeed * worldUnitsPerMoveSpeed * multiplier * Time.fixedDeltaTime;
-        body.MovePosition(body.position + difference.normalized * Mathf.Min(step, distance - preferredDistance));
+        body.MovePosition(body.position + difference.normalized * Mathf.Min(step, distance - stoppingDistance));
+    }
+
+    public bool IsInsideAttackArea()
+    {
+        Camera camera = Camera.main;
+        if (camera == null || !camera.orthographic)
+            return false;
+        Vector3 viewport = camera.WorldToViewportPoint(transform.position);
+        float halfHeight = camera.orthographicSize;
+        float halfWidth = halfHeight * camera.aspect;
+        float horizontalInset = Mathf.Min(0.45f, screenEdgeInset / (2f * halfWidth));
+        float verticalInset = Mathf.Min(0.45f, screenEdgeInset / (2f * halfHeight));
+        return viewport.z > 0f &&
+            viewport.x >= horizontalInset && viewport.x <= 1f - horizontalInset &&
+            viewport.y >= verticalInset && viewport.y <= 1f - verticalInset;
     }
 
     public override void TakeDamage(float amount)
     {
         if (!IsAlive || amount <= 0f)
             return;
-        float actualDamage = Mathf.Min(currentHealth, amount);
         currentHealth = Mathf.Max(0f, currentHealth - amount);
-        ReportDamage(actualDamage, transform.position + Vector3.up * 0.8f);
+        ReportDamage(amount, transform.position + Vector3.up * 0.8f);
         UpdateHealthBar();
         if (IsAlive)
             return;

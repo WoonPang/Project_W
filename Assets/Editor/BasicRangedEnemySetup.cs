@@ -22,7 +22,7 @@ public static class BasicRangedEnemySetup
         EnemyProjectile2D projectile = CreateProjectilePrefab(circle);
         BasicRangedEnemy2D enemy = CreateEnemyPrefab(circle, projectile);
         RemoveDebugHudButtons();
-        SaveMeleePrefabWithoutPickup();
+        UpdateEnemyPrefab(MeleePrefabPath, 20f);
 
         Scene scene = EditorSceneManager.OpenScene(PlayScenePath, OpenSceneMode.Single);
         Camera camera = UnityEngine.Object.FindFirstObjectByType<Camera>();
@@ -101,6 +101,7 @@ public static class BasicRangedEnemySetup
             SpriteRenderer renderer = enemy.AddComponent<SpriteRenderer>();
             renderer.sprite = sprite;
             renderer.sortingOrder = 9;
+            EnsureEnemyOutline(enemy.transform, sprite);
             Rigidbody2D body = enemy.AddComponent<Rigidbody2D>();
             body.bodyType = RigidbodyType2D.Kinematic;
             body.gravityScale = 0f;
@@ -140,6 +141,54 @@ public static class BasicRangedEnemySetup
         return renderer;
     }
 
+    private static void EnsureEnemyOutline(Transform parent, Sprite sprite)
+    {
+        Transform existing = parent.Find("Enemy Outline");
+        GameObject outline = existing != null ? existing.gameObject : new GameObject("Enemy Outline");
+        outline.transform.SetParent(parent, false);
+        outline.transform.localPosition = Vector3.zero;
+        outline.transform.localScale = new Vector3(1.12f, 1.12f, 1f);
+        SpriteRenderer renderer = outline.GetComponent<SpriteRenderer>();
+        if (renderer == null)
+            renderer = outline.AddComponent<SpriteRenderer>();
+        renderer.sprite = sprite;
+        renderer.color = new Color(0.7f, 0.3f, 0.34f, 1f);
+        renderer.sortingOrder = 8;
+    }
+
+    public static void ApplyBalanceAndOutlines()
+    {
+        UpdateEnemyPrefab(MeleePrefabPath, 20f);
+        UpdateEnemyPrefab(EnemyPrefabPath, 10f);
+        AssetDatabase.SaveAssets();
+        PrototypePlaySetup.Validate();
+        Validate();
+        Debug.Log("Enemy health and thin red outlines validated in both prefabs.");
+    }
+
+    private static void UpdateEnemyPrefab(string path, float health)
+    {
+        GameObject root = PrefabUtility.LoadPrefabContents(path);
+        try
+        {
+            SpriteRenderer body = root.GetComponent<SpriteRenderer>();
+            if (body == null || body.sprite == null)
+                throw new InvalidOperationException("Enemy body sprite is missing: " + path);
+            EnsureEnemyOutline(root.transform, body.sprite);
+            UnityEngine.Object component = path == MeleePrefabPath
+                ? (UnityEngine.Object)root.GetComponent<BasicMeleeEnemy2D>()
+                : root.GetComponent<BasicRangedEnemy2D>();
+            SerializedObject serialized = new SerializedObject(component);
+            serialized.FindProperty("maxHealth").floatValue = health;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+    }
+
     private static void RemoveDebugHudButtons()
     {
         GameObject hud = PrefabUtility.LoadPrefabContents(HudPrefabPath);
@@ -173,19 +222,6 @@ public static class BasicRangedEnemySetup
         }
     }
 
-    private static void SaveMeleePrefabWithoutPickup()
-    {
-        GameObject melee = PrefabUtility.LoadPrefabContents(MeleePrefabPath);
-        try
-        {
-            PrefabUtility.SaveAsPrefabAsset(melee, MeleePrefabPath);
-        }
-        finally
-        {
-            PrefabUtility.UnloadPrefabContents(melee);
-        }
-    }
-
     public static void Validate()
     {
         GameObject hud = PrefabUtility.LoadPrefabContents(HudPrefabPath);
@@ -213,9 +249,14 @@ public static class BasicRangedEnemySetup
         try
         {
             BasicRangedEnemy2D ranged = enemy.GetComponent<BasicRangedEnemy2D>();
-            if (ranged == null || ranged.MaxHealth != 20f || ranged.AttackDamage != 7f ||
+            SpriteRenderer body = enemy.GetComponent<SpriteRenderer>();
+            SpriteRenderer outline = enemy.transform.Find("Enemy Outline")?.GetComponent<SpriteRenderer>();
+            if (ranged == null || ranged.MaxHealth != 15f || ranged.AttackDamage != 7f ||
                 ranged.MoveSpeed != 1f || ranged.ExperienceOnDeath != 5f ||
+                ranged.ScreenEdgeInset != 2.5f ||
                 enemy.GetComponent<CircleCollider2D>() == null ||
+                body == null || outline == null || outline.sprite != body.sprite ||
+                outline.sortingOrder >= body.sortingOrder ||
                 new SerializedObject(ranged).FindProperty("projectilePrefab").objectReferenceValue !=
                 AssetDatabase.LoadAssetAtPath<EnemyProjectile2D>(ProjectilePrefabPath))
                 throw new InvalidOperationException("Ranged enemy values or projectile are invalid.");
@@ -223,6 +264,30 @@ public static class BasicRangedEnemySetup
         finally
         {
             PrefabUtility.UnloadPrefabContents(enemy);
+        }
+        GameObject attackProbe = (GameObject)PrefabUtility.InstantiatePrefab(
+            AssetDatabase.LoadAssetAtPath<GameObject>(EnemyPrefabPath));
+        try
+        {
+            Camera camera = Camera.main;
+            BasicRangedEnemy2D ranged = attackProbe.GetComponent<BasicRangedEnemy2D>();
+            float depth = Mathf.Abs(attackProbe.transform.position.z - camera.transform.position.z);
+            attackProbe.transform.position = camera.ViewportToWorldPoint(
+                new Vector3(0.5f, 0.1f, depth));
+            if (ranged.IsInsideAttackArea())
+                throw new InvalidOperationException("Ranged enemy can fire near the screen edge.");
+            attackProbe.transform.position = camera.ViewportToWorldPoint(
+                new Vector3(0.1f, 0.5f, depth));
+            if (ranged.IsInsideAttackArea())
+                throw new InvalidOperationException("Ranged enemy can fire near the side edge.");
+            attackProbe.transform.position = camera.ViewportToWorldPoint(
+                new Vector3(0.5f, 0.3f, depth));
+            if (!ranged.IsInsideAttackArea())
+                throw new InvalidOperationException("Ranged enemy cannot fire after entering the screen.");
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(attackProbe);
         }
         EditorSceneManager.OpenScene(TestScenePath, OpenSceneMode.Single);
         if (UnityEngine.Object.FindObjectsByType<TrainingDummy2D>(FindObjectsSortMode.None).Length != 4)

@@ -6,9 +6,18 @@ public sealed class PlayTimeUI : MonoBehaviour
     [SerializeField] private Text timeText;
 
     private float elapsedSeconds;
+    private GameSessionTime2D sessionTime;
     private int lastDisplayedSecond = -1;
 
-    public float ElapsedSeconds => elapsedSeconds;
+    public float ElapsedSeconds
+    {
+        get
+        {
+            if (sessionTime == null)
+                sessionTime = FindFirstObjectByType<GameSessionTime2D>();
+            return sessionTime != null ? sessionTime.ElapsedSeconds : elapsedSeconds;
+        }
+    }
 
     public void Configure(Text label)
     {
@@ -25,16 +34,17 @@ public sealed class PlayTimeUI : MonoBehaviour
         if (Time.timeScale <= 0f)
             return;
 
-        elapsedSeconds += Time.deltaTime;
+        if (sessionTime == null)
+            elapsedSeconds += Time.deltaTime;
         RefreshText();
     }
 
-    private void RefreshText()
+    public void RefreshText()
     {
         if (timeText == null)
             return;
 
-        int wholeSeconds = Mathf.FloorToInt(elapsedSeconds);
+        int wholeSeconds = Mathf.FloorToInt(ElapsedSeconds);
         if (wholeSeconds == lastDisplayedSecond)
             return;
 

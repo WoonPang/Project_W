@@ -89,8 +89,8 @@ public static class AugmentSetup
             if (barrage.TotalShots != 60 || !Mathf.Approximately(barrage.DamageMultiplier, 1.6f) ||
                 !Mathf.Approximately(barrage.CooldownSeconds, 27.5f) ||
                 !Mathf.Approximately(movement.DashCooldownSeconds, 9f) ||
-                !Mathf.Approximately(stats.MaxHealth, 120f) ||
-                !Mathf.Approximately(stats.AttackDamage, 20f) ||
+                !Mathf.Approximately(stats.MaxHealth, 105f) ||
+                !Mathf.Approximately(stats.AttackDamage, 12.5f) ||
                 !Mathf.Approximately(stats.MoveSpeed, 1.05f) ||
                 !Mathf.Approximately(stats.AttackSpeed, 1.1f))
                 throw new InvalidOperationException("Implemented augment effects have wrong values.");

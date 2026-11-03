@@ -95,6 +95,7 @@ public static class PrototypePlaySetup
             body.sprite = sprite;
             body.color = Color.white;
             body.sortingOrder = 9;
+            CreateEnemyOutline(enemyObject.transform, sprite);
 
             Rigidbody2D rigidbody = enemyObject.AddComponent<Rigidbody2D>();
             rigidbody.bodyType = RigidbodyType2D.Kinematic;
@@ -137,6 +138,17 @@ public static class PrototypePlaySetup
         renderer.color = color;
         renderer.sortingOrder = sortingOrder;
         return renderer;
+    }
+
+    private static void CreateEnemyOutline(Transform parent, Sprite sprite)
+    {
+        GameObject outline = new GameObject("Enemy Outline");
+        outline.transform.SetParent(parent, false);
+        outline.transform.localScale = new Vector3(1.12f, 1.12f, 1f);
+        SpriteRenderer renderer = outline.AddComponent<SpriteRenderer>();
+        renderer.sprite = sprite;
+        renderer.color = new Color(0.7f, 0.3f, 0.34f, 1f);
+        renderer.sortingOrder = 8;
     }
 
     private static void SetBuildScenes()
@@ -199,11 +211,14 @@ public static class PrototypePlaySetup
             BasicMeleeEnemy2D enemy = prefab.GetComponent<BasicMeleeEnemy2D>();
             SpriteRenderer renderer = prefab.GetComponent<SpriteRenderer>();
             BoxCollider2D collider = prefab.GetComponent<BoxCollider2D>();
-            if (enemy == null || enemy.MaxHealth != 30f || enemy.AttackDamage != 5f ||
-                enemy.MoveSpeed != 0.9f || enemy.ExperienceOnDeath != 5f ||
+            SpriteRenderer outline = prefab.transform.Find("Enemy Outline")?.GetComponent<SpriteRenderer>();
+            if (enemy == null || enemy.MaxHealth != 20f || enemy.AttackDamage != 5f ||
+                enemy.MoveSpeed != 0.9f || enemy.ExperienceOnDeath != 7.5f ||
                 renderer == null || renderer.color != Color.white ||
+                outline == null || outline.sprite != renderer.sprite ||
+                outline.sortingOrder >= renderer.sortingOrder ||
                 collider == null || !collider.isTrigger)
-                throw new InvalidOperationException("Basic melee enemy prefab values do not match the PDF.");
+                throw new InvalidOperationException("Basic melee enemy prefab values do not match the prototype balance.");
         }
         finally
         {
@@ -215,7 +230,7 @@ public static class PrototypePlaySetup
             throw new InvalidOperationException("Prototype_Test was not preserved.");
         EditorSceneManager.OpenScene(PlayScenePath, OpenSceneMode.Single);
         ValidateCombatTarget();
-        Debug.Log("Play/test scenes, PDF enemy values, and off-screen spawning validated.");
+        Debug.Log("Play/test scenes, prototype enemy values, and off-screen spawning validated.");
     }
 
     private static void ValidateCombatTarget()
@@ -243,6 +258,18 @@ public static class PrototypePlaySetup
                 findNearest.Invoke(autoAttack, null) != enemy)
                 throw new InvalidOperationException("Player attacks do not select the new enemy.");
 
+            Camera camera = Camera.main;
+            float depth = Mathf.Abs(player.transform.position.z - camera.transform.position.z);
+            instance.transform.position = camera.ViewportToWorldPoint(
+                new Vector3(0.98f, 0.98f, depth));
+            if (Vector2.Distance(instance.transform.position, player.transform.position) <= 6f ||
+                findNearest.Invoke(autoAttack, null) != enemy)
+                throw new InvalidOperationException("Auto attack cannot select a distant on-screen enemy.");
+            instance.transform.position = camera.ViewportToWorldPoint(
+                new Vector3(1.1f, 0.5f, depth));
+            if (findNearest.Invoke(autoAttack, null) != null)
+                throw new InvalidOperationException("Auto attack selects an off-screen enemy.");
+
             float reportedDamage = 0f;
             Action<float, Vector3> onDamage = (damage, _) => reportedDamage = damage;
             CombatTarget2D.Damaged += onDamage;
@@ -254,7 +281,7 @@ public static class PrototypePlaySetup
             {
                 CombatTarget2D.Damaged -= onDamage;
             }
-            if (!enemy.IsAlive || enemy.CurrentHealth != 20f || reportedDamage != 10f)
+            if (!enemy.IsAlive || enemy.CurrentHealth != 10f || reportedDamage != 10f)
                 throw new InvalidOperationException("Enemy health or damage popups are not connected.");
         }
         finally

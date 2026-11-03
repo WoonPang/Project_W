@@ -56,7 +56,7 @@ public static class HudRevisionSetup
                 Child<Text>(hud.transform, "R Countdown"));
             controller.ConfigureDebugButtons(healthPlus, healthMinus, expPlus);
             Child<Image>(hud.transform, "EXP Fill").fillAmount = 0f;
-            Child<Text>(hud.transform, "EXP Text").text = "EXP 0%";
+            Child<Text>(hud.transform, "EXP Text").text = "EXP 0.0%";
 
             PrefabUtility.SaveAsPrefabAsset(hud, HudPrefabPath);
         }

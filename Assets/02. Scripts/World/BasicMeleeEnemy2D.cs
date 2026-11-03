@@ -1,16 +1,16 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(BoxCollider2D), typeof(EnemyStatus2D))]
-public sealed class BasicMeleeEnemy2D : CombatTarget2D
+public sealed class BasicMeleeEnemy2D : CombatTarget2D, ILevelScaledEnemyHealth
 {
-    [SerializeField, Min(1f)] private float maxHealth = 30f;
+    [SerializeField, Min(1f)] private float maxHealth = 20f;
     [SerializeField, Min(0f)] private float attackDamage = 5f;
     [SerializeField, Min(0f)] private float moveSpeed = 0.9f;
     [SerializeField, Min(0.1f)] private float attackInterval = 1f;
     [SerializeField, Min(0.1f)] private float attackRange = 0.95f;
     [SerializeField, Min(0.1f)] private float stopDistance = 0.82f;
     [SerializeField, Min(0.1f)] private float worldUnitsPerMoveSpeed = 5f;
-    [SerializeField, Min(0f)] private float experienceOnDeath = 5f;
+    [SerializeField, Min(0f)] private float experienceOnDeath = 7.5f;
     [SerializeField, Min(1f)] private float despawnDistance = 30f;
     [SerializeField] private SpriteRenderer bodyRenderer;
     [SerializeField] private SpriteRenderer healthFillRenderer;
@@ -35,6 +35,15 @@ public sealed class BasicMeleeEnemy2D : CombatTarget2D
         healthFillRenderer = healthFill;
     }
 
+    public void ApplyLevelHealth(int level)
+    {
+        float targetMaximum = EnemyHealthScaling2D.MaxHealth(EnemyHealthKind.BasicMelee, level);
+        currentHealth = EnemyHealthScaling2D.ScaleRemainingHealth(
+            currentHealth, maxHealth, targetMaximum);
+        maxHealth = targetMaximum;
+        UpdateHealthBar();
+    }
+
     private void Awake()
     {
         body = GetComponent<Rigidbody2D>();
@@ -43,7 +52,7 @@ public sealed class BasicMeleeEnemy2D : CombatTarget2D
         if (player != null)
             playerProgress = player.GetComponent<PlayerProgress>();
         currentHealth = maxHealth;
-        UpdateHealthBar();
+        ApplyLevelHealth(EnemyHealthScaling2D.CurrentPlayerLevel());
     }
 
     private void Update()
@@ -102,9 +111,8 @@ public sealed class BasicMeleeEnemy2D : CombatTarget2D
         if (!IsAlive || amount <= 0f)
             return;
 
-        float actualDamage = Mathf.Min(currentHealth, amount);
         currentHealth = Mathf.Max(0f, currentHealth - amount);
-        ReportDamage(actualDamage, transform.position + Vector3.up * 0.8f);
+        ReportDamage(amount, transform.position + Vector3.up * 0.8f);
         UpdateHealthBar();
         if (IsAlive)
             return;

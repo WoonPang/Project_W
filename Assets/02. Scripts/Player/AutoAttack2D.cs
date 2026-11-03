@@ -3,7 +3,6 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerStats))]
 public sealed class AutoAttack2D : MonoBehaviour
 {
-    [SerializeField, Min(0f)] private float attackRange = 6f;
     [SerializeField, Min(0f)] private float projectileSpeed = 12f;
     [SerializeField] private Projectile2D projectilePrefab;
 
@@ -38,19 +37,28 @@ public sealed class AutoAttack2D : MonoBehaviour
 
     private CombatTarget2D FindNearestTarget()
     {
+        Camera camera = Camera.main;
+        if (camera == null)
+            return null;
+
         CombatTarget2D nearest = null;
-        float nearestSqrDistance = attackRange * attackRange;
+        float nearestSqrDistance = float.PositiveInfinity;
 
-        foreach (CombatTarget2D dummy in FindObjectsByType<CombatTarget2D>(FindObjectsSortMode.None))
+        foreach (CombatTarget2D target in FindObjectsByType<CombatTarget2D>(FindObjectsSortMode.None))
         {
-            if (!dummy.IsAlive)
+            if (!target.IsAlive)
                 continue;
 
-            float sqrDistance = (dummy.transform.position - transform.position).sqrMagnitude;
-            if (sqrDistance > nearestSqrDistance)
+            Vector3 viewport = camera.WorldToViewportPoint(target.transform.position);
+            if (viewport.z <= 0f || viewport.x < 0f || viewport.x > 1f ||
+                viewport.y < 0f || viewport.y > 1f)
                 continue;
 
-            nearest = dummy;
+            float sqrDistance = (target.transform.position - transform.position).sqrMagnitude;
+            if (sqrDistance >= nearestSqrDistance)
+                continue;
+
+            nearest = target;
             nearestSqrDistance = sqrDistance;
         }
 

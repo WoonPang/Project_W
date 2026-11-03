@@ -20,7 +20,7 @@ public static class ExperiencePickupSetup
         try
         {
             Text experienceText = hud.transform.Find("EXP Text").GetComponent<Text>();
-            experienceText.text = "EXP 0%";
+            experienceText.text = "EXP 0.0%";
             experienceText.fontSize = 32;
             experienceText.resizeTextForBestFit = false;
             experienceText.rectTransform.sizeDelta = new Vector2(340f, 46f);

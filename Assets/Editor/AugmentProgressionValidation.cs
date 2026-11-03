@@ -67,7 +67,8 @@ public static class AugmentProgressionValidation
             for (int count = 0; count < 29; count++)
                 progress.LevelUpImmediately();
             if (progress.CurrentLevel != 30 ||
-                !Mathf.Approximately(stats.AttackDamage, 142.5f) ||
+                !Mathf.Approximately(stats.MaxHealth, 275f) ||
+                !Mathf.Approximately(stats.AttackDamage, 97.5f) ||
                 Mathf.Abs(stats.MoveSpeed - 1.975f) > 0.0001f ||
                 Mathf.Abs(stats.AttackSpeed - 2.725f) > 0.0001f)
                 throw new InvalidOperationException("Character levels should keep growing after speed augments max out.");

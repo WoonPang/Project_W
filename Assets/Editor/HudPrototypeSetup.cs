@@ -87,7 +87,7 @@ public static class HudPrototypeSetup
             new Color(0.51f, 0.53f, 0.91f), 176f, 76f, 513f, 46f);
         SetHorizontalFill(expFill);
         expFill.fillAmount = 0f;
-        Text expText = CreateText(root.transform, "EXP Text", font, "EXP 0%",
+        Text expText = CreateText(root.transform, "EXP Text", font, "EXP 0.0%",
             32, FontStyle.Bold, whiteColor, TextAnchor.MiddleLeft, 309f, 76f, 340f, 46f);
 
         CreateImage(root.transform, "Stats Background", white,

@@ -98,10 +98,10 @@ public sealed class PlayerAugments : MonoBehaviour
                     movement.SetDashCooldownReduction(GetLevel(id));
                 break;
             case AugmentId.MaxHealth:
-                stats.AddMaxHealth(20f);
+                stats.AddMaxHealth(5f);
                 break;
             case AugmentId.AttackDamage:
-                stats.AddAttackDamage(10f);
+                stats.AddAttackDamage(2.5f);
                 break;
             case AugmentId.MoveSpeed:
                 stats.AddMoveSpeed(0.05f);

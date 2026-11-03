@@ -12,6 +12,7 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
 
     private readonly List<EnemyStatus2D> slowedTargets = new List<EnemyStatus2D>();
     private PlayerAugments augments;
+    private SpriteRenderer shieldAura;
     private SpriteRenderer slowRing;
     private SpriteRenderer stunOutline;
     private SpriteRenderer stunChargeFill;
@@ -51,6 +52,8 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
     {
         augments = GetComponent<PlayerAugments>();
         CreateCircleSprites();
+        shieldAura = CreateRing("Shield Aura", 0.9f,
+            new Color(0.22f, 0.58f, 1f, 0.85f), 9);
         slowRing = CreateRing("Slow Field Ring", slowRadius,
             new Color(0.3f, 0.9f, 1f, 0.75f), 8);
         stunOutline = CreateRing("Thunder Warning Outline", stunRadius,
@@ -61,6 +64,7 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
 
     private void Update()
     {
+        UpdateShieldVisual();
         if (Time.timeScale <= 0f)
             return;
 
@@ -76,7 +80,14 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
 
         shieldReadyAt = Time.time + AugmentCatalog.AutomaticSkillCooldown(
             AugmentId.Shield, augments.GetLevel(AugmentId.Shield));
+        UpdateShieldVisual();
         return true;
+    }
+
+    private void UpdateShieldVisual()
+    {
+        if (shieldAura != null)
+            shieldAura.enabled = ShieldReady;
     }
 
     private void UpdateSlow()
@@ -269,13 +280,19 @@ public sealed class PlayerAutomaticAugments2D : MonoBehaviour
             if (target != null)
                 target.SetAuraSlow(false);
         }
-        if (ringSprite != null)
-            Destroy(ringSprite);
-        if (ringTexture != null)
-            Destroy(ringTexture);
-        if (outlineSprite != null)
-            Destroy(outlineSprite);
-        if (outlineTexture != null)
-            Destroy(outlineTexture);
+        DestroyGeneratedObject(ringSprite);
+        DestroyGeneratedObject(ringTexture);
+        DestroyGeneratedObject(outlineSprite);
+        DestroyGeneratedObject(outlineTexture);
+    }
+
+    private static void DestroyGeneratedObject(Object generated)
+    {
+        if (generated == null)
+            return;
+        if (Application.isPlaying)
+            Destroy(generated);
+        else
+            DestroyImmediate(generated);
     }
 }

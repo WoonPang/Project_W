@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 8557925727609192326}
   - component: {fileID: 8187569004691021522}
   - component: {fileID: 4835659789735684727}
+  - component: {fileID: 2853813294690393315}
   m_Layer: 0
   m_Name: PrototypePlayer
   m_TagString: Untagged
@@ -173,7 +174,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eea5ff74020cc4cd4a1dd6c4b6c8a58f, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement2D
   worldUnitsPerMoveSpeed: 5
   dashDistance: 2.5
@@ -189,16 +190,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a98acbe0b7cb4bfea08c94b98cfa471, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
   maxHealth: 100
   attackDamage: 10
   moveSpeed: 1
   attackSpeed: 1
-  healthPerLevel: 15
+  healthPerLevel: 5
   attackDamagePerLevel: 2.5
   moveSpeedPerLevel: 0.025
   attackSpeedPerLevel: 0.025
+  invulnerabilitySeconds: 3
 --- !u!114 &425111159787045467
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -209,9 +211,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3e0bec332aa524e7c92320da4cb0abf1, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::AutoAttack2D
-  attackRange: 6
   projectileSpeed: 12
   projectilePrefab: {fileID: 1958158854283364205, guid: 8221fa059932b41b3a5add6b73dc222d, type: 3}
 --- !u!114 &2842370659147220030
@@ -224,7 +225,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f1ece2e3cd981460bbc01118df809f3d, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::RSkillCooldown
   skillName: "\uBB34\uCC28\uBCC4 \uB09C\uC0AC"
   cooldownSeconds: 30
@@ -243,7 +244,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ac11c09c1c3604ca5bed9ff72bdfabbb, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerProgress
   startingLevel: 1
   startingExperience: 0
@@ -257,7 +258,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2ba1b95268da6446b92e49a991eb92f9, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAugments
 --- !u!114 &4835659789735684727
 MonoBehaviour:
@@ -269,10 +270,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a2f3c4a6111234c3f92954b0d5e92e7f, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAutomaticAugments2D
   slowRadius: 3
   slowDuration: 7
   stunRadius: 3
   stunDuration: 1.5
   stunWindup: 3
+--- !u!114 &2853813294690393315
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6350622918745337835}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2aa2c3ef94914fd49add440cc0dc0de3, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerHitFeedback2D

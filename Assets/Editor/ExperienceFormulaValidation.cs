@@ -33,7 +33,7 @@ public static class ExperienceFormulaValidation
 
             progress.LevelUpImmediately();
             CheckProgress(progress, 5, 0f, 140f);
-            if (!Mathf.Approximately(stats.MaxHealth, 160f) ||
+            if (!Mathf.Approximately(stats.MaxHealth, 120f) ||
                 !Mathf.Approximately(stats.AttackDamage, 20f) ||
                 !Mathf.Approximately(stats.MoveSpeed, 1.1f) ||
                 !Mathf.Approximately(stats.AttackSpeed, 1.1f))

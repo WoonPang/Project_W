@@ -15,9 +15,19 @@ public sealed class BasicRangedEnemySpawner2D : MonoBehaviour
 
     private float elapsedSeconds;
     private float nextSpawnIn;
+    private GameSessionTime2D sessionTime;
 
     public float FirstSpawnAfterSeconds => firstSpawnAfterSeconds;
     public int MaximumAlive => maximumAlive;
+    public float ElapsedSeconds
+    {
+        get
+        {
+            if (sessionTime == null)
+                sessionTime = FindFirstObjectByType<GameSessionTime2D>();
+            return sessionTime != null ? sessionTime.ElapsedSeconds : elapsedSeconds;
+        }
+    }
 
     public void Configure(BasicRangedEnemy2D prefab, Camera camera, PlayerStats target)
     {
@@ -36,11 +46,12 @@ public sealed class BasicRangedEnemySpawner2D : MonoBehaviour
 
     private void Update()
     {
-        if (Time.timeScale <= 0f || enemyPrefab == null || worldCamera == null ||
+        if (Time.timeScale <= 0f || MonsterSpawnGate2D.IsPaused || enemyPrefab == null || worldCamera == null ||
             player == null || player.CurrentHealth <= 0f)
             return;
-        elapsedSeconds += Time.deltaTime;
-        if (elapsedSeconds < firstSpawnAfterSeconds)
+        if (sessionTime == null)
+            elapsedSeconds += Time.deltaTime;
+        if (ElapsedSeconds < firstSpawnAfterSeconds)
             return;
         nextSpawnIn -= Time.deltaTime;
         if (nextSpawnIn > 0f)
@@ -52,7 +63,7 @@ public sealed class BasicRangedEnemySpawner2D : MonoBehaviour
                 Random.Range(0, 4), Random.value);
             Instantiate(enemyPrefab, position, Quaternion.identity);
         }
-        float progress = Mathf.Clamp01(elapsedSeconds / rampSeconds);
+        float progress = Mathf.Clamp01(ElapsedSeconds / rampSeconds);
         nextSpawnIn = Mathf.Lerp(initialSpawnInterval, minimumSpawnInterval, progress);
     }
 }
