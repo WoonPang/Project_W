@@ -1,10 +1,9 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(CircleCollider2D), typeof(EnemyStatus2D))]
 public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
 {
-    private enum BossAction { Chasing, LaserWarning, LaserFiring, MeteorWarning, MeteorImpact, SummonWarning }
+    private enum BossAction { Chasing, LaserWarning, LaserFiring, MeteorStorm, SummonWarning }
 
     [SerializeField, Min(1f)] private float maxHealth = 500f;
     [SerializeField, Min(0f)] private float attackDamage = 20f;
@@ -14,21 +13,20 @@ public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
     [SerializeField, Min(0.1f)] private float stopDistance = 5f;
     [SerializeField, Min(0.1f)] private float attackRange = 8f;
     [SerializeField, Min(0.1f)] private float scatterAttackInterval = 2.2f;
-    [SerializeField, Range(1, 20)] private int scatterProjectileCount = 10;
-    [SerializeField, Range(0f, 180f)] private float scatterArcDegrees = 144f;
+    [SerializeField, Range(1, 32)] private int scatterProjectileCount = 24;
     [SerializeField, Min(0.1f)] private float laserChargeSeconds = 1.5f;
     [SerializeField, Min(0.1f)] private float laserFlashSeconds = 0.3f;
     [SerializeField, Min(0.1f)] private float laserLength = 30f;
     [SerializeField, Min(0.01f)] private float laserHitRadius = 0.55f;
     [SerializeField, Range(0f, 1f)] private float laserAimLockFraction = 0.65f;
-    [SerializeField, Min(0.1f)] private float meteorChargeSeconds = 1.6f;
+    [SerializeField, Min(0.1f)] private float meteorChargeSeconds = 0.8f;
     [SerializeField, Min(0.1f)] private float meteorImpactSeconds = 0.3f;
+    [SerializeField, Min(1f)] private float meteorPatternSeconds = 5f;
     [SerializeField, Min(0.1f)] private float meteorHitRadius = 1.1f;
     [SerializeField, Min(0.1f)] private float summonChargeSeconds = 1f;
     [SerializeField, Min(0.1f)] private float actionInterval = 1.5f;
     [SerializeField, Min(0f)] private float laserCooldownSeconds = 7f;
     [SerializeField, Min(0f)] private float meteorCooldownSeconds = 15f;
-    [SerializeField, Min(0f)] private float summonCooldownSeconds = 30f;
     [SerializeField, Min(0f)] private float minimumSummonPlayerDistance = 3.5f;
     [SerializeField] private SpriteRenderer bodyRenderer;
     [SerializeField] private SpriteRenderer healthFillRenderer;
@@ -49,15 +47,17 @@ public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
     private PlayerProgress playerProgress;
     private Camera worldCamera;
     private Vector2[] meteorPositions;
+    private bool[] meteorScheduled;
+    private bool[] meteorLanded;
     private int activeMeteorCount;
-    private Vector2 reservedMeteorSafePosition;
     private Vector2 laserDirection;
     private float currentHealth;
     private float actionStartedAt;
     private float nextActionAt;
     private float nextLaserAt;
     private float nextMeteorAt;
-    private float nextSummonAt;
+    private bool summonPending;
+    private bool hasSummonedAtHalfHealth;
     private float nextScatterAt;
     private int scatterVolleyCount;
     private BossAction action;
@@ -69,8 +69,11 @@ public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
     public float MoveSpeed => moveSpeed;
     public float ExperienceOnDeath => experienceOnDeath;
     public bool IsChargingLaser => action == BossAction.LaserWarning;
-    public bool IsChargingMeteor => action == BossAction.MeteorWarning;
+    public bool IsChargingMeteor => action == BossAction.MeteorStorm;
     public bool IsChargingSummon => action == BossAction.SummonWarning;
+    public bool HasSummonedAtHalfHealth => hasSummonedAtHalfHealth;
+    public bool IsSummonInvulnerable => action == BossAction.SummonWarning ||
+        (summonPending && !MonsterSpawnGate2D.IsPaused);
 
     public void Configure(SpriteRenderer bossBody, SpriteRenderer healthFill,
         SpriteRenderer beamBoundary, SpriteRenderer beamFill, SpriteRenderer beamFlash,
@@ -112,6 +115,8 @@ public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
         worldCamera = Camera.main;
         currentHealth = maxHealth;
         meteorPositions = new Vector2[meteorBoundaries.Length];
+        meteorScheduled = new bool[meteorBoundaries.Length];
+        meteorLanded = new bool[meteorBoundaries.Length];
         ApplyLevelHealth(EnemyHealthScaling2D.CurrentPlayerLevel());
         HideEffects();
         nextActionAt = Time.time + 1f;
@@ -154,22 +159,8 @@ public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
                 if (progress >= 1f)
                     EndAction();
                 break;
-            case BossAction.MeteorWarning:
-                progress = Mathf.Clamp01((Time.time - actionStartedAt) / meteorChargeSeconds);
-                UpdateMeteorWarning(progress);
-                if (progress >= 1f)
-                    DropMeteors();
-                break;
-            case BossAction.MeteorImpact:
-                progress = Mathf.Clamp01((Time.time - actionStartedAt) / meteorImpactSeconds);
-                for (int index = 0; index < activeMeteorCount; index++)
-                {
-                    Color color = meteorImpacts[index].color;
-                    color.a = 0.85f * (1f - progress);
-                    meteorImpacts[index].color = color;
-                }
-                if (progress >= 1f)
-                    EndAction();
+            case BossAction.MeteorStorm:
+                UpdateMeteorStorm();
                 break;
             case BossAction.SummonWarning:
                 progress = Mathf.Clamp01((Time.time - actionStartedAt) / summonChargeSeconds);
@@ -177,13 +168,19 @@ public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
                 summonGlow.color = new Color(0.8f, 0.35f, 1f, 0.15f + progress * 0.4f);
                 if (progress >= 1f)
                 {
-                    SummonAllMonsters();
-                    EndAction();
+                    if (SummonAllMonsters())
+                    {
+                        summonPending = false;
+                        hasSummonedAtHalfHealth = true;
+                        EndAction();
+                    }
+                    else
+                        CancelAction();
                 }
                 break;
             case BossAction.Chasing:
                 if (Time.time >= nextActionAt)
-                    TryStartRandomPattern();
+                    TryStartPattern();
                 if (action == BossAction.Chasing && Time.time >= nextScatterAt &&
                     Vector2.Distance(transform.position, player.transform.position) <= attackRange)
                     FireScatterAttack();
@@ -198,9 +195,14 @@ public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
 
     private void FixedUpdate()
     {
-        if (Time.timeScale <= 0f || !IsAlive || action != BossAction.Chasing ||
-            player == null || player.CurrentHealth <= 0f || status != null && status.IsStunned)
+        if (Time.timeScale <= 0f || !IsAlive || player == null ||
+            player.CurrentHealth <= 0f || status != null && status.IsStunned)
             return;
+        if (action != BossAction.Chasing)
+        {
+            body.linearVelocity = Vector2.zero;
+            return;
+        }
         Vector2 difference = (Vector2)player.transform.position - body.position;
         if (difference.magnitude <= stopDistance)
             return;
@@ -210,54 +212,48 @@ public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
             Mathf.Min(step, difference.magnitude - stopDistance));
     }
 
-    private void TryStartRandomPattern()
+    private void TryStartPattern()
     {
-        if (action != BossAction.Chasing || player == null || Time.time < nextActionAt ||
-            Vector2.Distance(transform.position, player.transform.position) > attackRange)
+        if (action != BossAction.Chasing || player == null || Time.time < nextActionAt)
             return;
-        int count = 0;
-        int chosen = -1;
-        if (Time.time >= nextLaserAt)
+        if (summonPending && !MonsterSpawnGate2D.IsPaused)
         {
-            count++;
-            chosen = 0;
+            BeginSummonWarning();
+            return;
         }
-        if (Time.time >= nextMeteorAt)
+        if (Vector2.Distance(transform.position, player.transform.position) > attackRange)
+            return;
+        bool laserReady = Time.time >= nextLaserAt;
+        bool meteorReady = Time.time >= nextMeteorAt;
+        bool far = Vector2.Distance(transform.position, player.transform.position) > stopDistance;
+        if ((far && laserReady) || (!far && !meteorReady && laserReady))
         {
-            count++;
-            if (Random.Range(0, count) == 0)
-                chosen = 1;
+            BeginLaserWarning();
+            return;
         }
-        if (Time.time >= nextSummonAt)
+        if (meteorReady)
         {
-            count++;
-            if (Random.Range(0, count) == 0)
-                chosen = 2;
+            BeginMeteorStorm();
+            return;
         }
-        switch (chosen)
-        {
-            case 0: BeginLaserWarning(); break;
-            case 1: BeginMeteorWarning(); break;
-            case 2: BeginSummonWarning(); break;
-        }
+        if (laserReady)
+            BeginLaserWarning();
     }
 
     private void FireScatterAttack()
     {
-        if (scatterProjectilePrefab == null)
+        if (action != BossAction.Chasing || Time.timeScale <= 0f || !IsAlive ||
+            player == null || player.CurrentHealth <= 0f || scatterProjectilePrefab == null)
             return;
         Vector2 aim = (Vector2)player.transform.position - (Vector2)transform.position;
         if (aim.sqrMagnitude <= 0.001f)
             aim = Vector2.down;
         float aimDegrees = Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg;
-        float step = scatterProjectileCount > 1
-            ? scatterArcDegrees / (scatterProjectileCount - 1) : 0f;
-        // With ten shots, alternate the slight offset so one lane passes through the aim point.
-        float offset = scatterVolleyCount++ % 2 == 0 ? step * 0.5f : -step * 0.5f;
+        float step = 360f / scatterProjectileCount;
+        float offset = scatterVolleyCount++ % 2 == 0 ? 0f : step * 0.5f;
         for (int index = 0; index < scatterProjectileCount; index++)
         {
-            float angle = (aimDegrees - scatterArcDegrees * 0.5f +
-                index * step + offset) * Mathf.Deg2Rad;
+            float angle = (aimDegrees + index * step + offset) * Mathf.Deg2Rad;
             Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
             EnemyProjectile2D shot = Instantiate(scatterProjectilePrefab,
                 (Vector2)transform.position + direction * 1.7f, Quaternion.identity);
@@ -271,6 +267,7 @@ public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
 
     private void BeginLaserWarning()
     {
+        body.linearVelocity = Vector2.zero;
         laserDirection = ((Vector2)player.transform.position - (Vector2)transform.position).normalized;
         if (laserDirection.sqrMagnitude <= 0.001f)
             laserDirection = Vector2.down;
@@ -319,147 +316,134 @@ public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
         actionStartedAt = Time.time;
     }
 
-    private void BeginMeteorWarning()
+    private float MeteorInterval => activeMeteorCount > 1
+        ? (meteorPatternSeconds - meteorChargeSeconds - meteorImpactSeconds) /
+          (activeMeteorCount - 1)
+        : 0f;
+
+    private void BeginMeteorStorm()
     {
-        action = BossAction.MeteorWarning;
-        actionStartedAt = Time.time;
+        body.linearVelocity = Vector2.zero;
         if (worldCamera == null)
             worldCamera = Camera.main;
         if (worldCamera == null || meteorPositions.Length == 0)
         {
-            activeMeteorCount = 0;
             CancelAction();
             return;
         }
 
-        float spacing = meteorHitRadius * 2f + 0.35f;
+        action = BossAction.MeteorStorm;
+        actionStartedAt = Time.time;
+        activeMeteorCount = meteorPositions.Length;
+        for (int index = 0; index < activeMeteorCount; index++)
+        {
+            meteorScheduled[index] = false;
+            meteorLanded[index] = false;
+        }
+        HideEffects();
+        UpdateMeteorStorm();
+    }
+
+    private void ScheduleMeteor(int index, float interval)
+    {
+        float inset = meteorHitRadius + 0.25f;
         float halfHeight = worldCamera.orthographicSize;
         float halfWidth = halfHeight * worldCamera.aspect;
-        float inset = meteorHitRadius + 0.35f;
-        int columns = Mathf.Max(1, Mathf.FloorToInt((halfWidth * 2f - inset * 2f) / spacing) + 1);
-        int rows = Mathf.Max(1, Mathf.FloorToInt((halfHeight * 2f - inset * 2f) / spacing) + 1);
         Vector2 center = worldCamera.transform.position;
-        Vector2 first = center - new Vector2((columns - 1) * spacing,
-            (rows - 1) * spacing) * 0.5f;
-
-        int nearest = 0;
-        float nearestDistance = float.PositiveInfinity;
-        for (int index = 0; index < columns * rows; index++)
+        float bestClearance = float.NegativeInfinity;
+        Vector2 best = center;
+        for (int attempt = 0; attempt < 64; attempt++)
         {
-            Vector2 cell = first + new Vector2(index % columns, index / columns) * spacing;
-            float distance = ((Vector2)player.transform.position - cell).sqrMagnitude;
-            if (distance >= nearestDistance)
-                continue;
-            nearestDistance = distance;
-            nearest = index;
+            Vector2 candidate = center + new Vector2(
+                Random.Range(-halfWidth + inset, halfWidth - inset),
+                Random.Range(-halfHeight + inset, halfHeight - inset));
+            float clearance = float.PositiveInfinity;
+            for (int previous = index - 1; previous >= 0; previous--)
+            {
+                if ((index - previous) * interval >=
+                    meteorChargeSeconds + meteorImpactSeconds)
+                    break;
+                clearance = Mathf.Min(clearance,
+                    Vector2.Distance(candidate, meteorPositions[previous]));
+            }
+            if (clearance > bestClearance)
+            {
+                bestClearance = clearance;
+                best = candidate;
+            }
+            if (clearance >= meteorHitRadius * 2f + 0.25f)
+                break;
         }
-
-        int safeCell = FindAdjacentSafeCell(nearest, columns, rows, first, spacing);
-        reservedMeteorSafePosition = first +
-            new Vector2(safeCell % columns, safeCell / columns) * spacing;
-        List<int> available = new List<int>(columns * rows - 1);
-        for (int index = 0; index < columns * rows; index++)
-            if (index != safeCell && index != nearest)
-                available.Add(index);
-        for (int index = available.Count - 1; index > 0; index--)
-        {
-            int other = Random.Range(0, index + 1);
-            (available[index], available[other]) = (available[other], available[index]);
-        }
-        if (safeCell != nearest)
-            available.Insert(0, nearest);
-        activeMeteorCount = Mathf.Min(meteorPositions.Length,
-            Mathf.Min(available.Count, Mathf.FloorToInt(columns * rows * 0.75f)));
-        for (int index = 0; index < activeMeteorCount; index++)
-        {
-            int cell = available[index];
-            meteorPositions[index] = first +
-                new Vector2(cell % columns, cell / columns) * spacing;
-            meteorBoundaries[index].transform.position = meteorPositions[index];
-            meteorFills[index].transform.position = meteorPositions[index];
-            meteorImpacts[index].transform.position = meteorPositions[index];
-            meteorBoundaries[index].enabled = true;
-            meteorFills[index].enabled = true;
-            meteorFalling[index].enabled = false;
-            meteorImpacts[index].enabled = false;
-        }
-        UpdateMeteorWarning(0f);
+        meteorPositions[index] = best;
+        meteorScheduled[index] = true;
+        meteorBoundaries[index].transform.position = best;
+        meteorFills[index].transform.position = best;
+        meteorImpacts[index].transform.position = best;
     }
 
-    private int FindAdjacentSafeCell(int nearest, int columns, int rows,
-        Vector2 first, float spacing)
+    private void UpdateMeteorStorm()
     {
-        int column = nearest % columns;
-        int row = nearest / columns;
-        int best = nearest;
-        float bestDistance = float.NegativeInfinity;
-        foreach (Vector2Int direction in new[] {
-                     Vector2Int.left, Vector2Int.right, Vector2Int.up, Vector2Int.down })
-        {
-            int nextColumn = column + direction.x;
-            int nextRow = row + direction.y;
-            if (nextColumn < 0 || nextColumn >= columns || nextRow < 0 || nextRow >= rows)
-                continue;
-            Vector2 cell = first + new Vector2(nextColumn, nextRow) * spacing;
-            float distance = (cell - (Vector2)transform.position).sqrMagnitude;
-            if (distance <= bestDistance)
-                continue;
-            bestDistance = distance;
-            best = nextRow * columns + nextColumn;
-        }
-        return best;
-    }
-
-    private void UpdateMeteorWarning(float progress)
-    {
+        float elapsed = Time.time - actionStartedAt;
+        float interval = MeteorInterval;
         for (int index = 0; index < activeMeteorCount; index++)
         {
-            meteorFills[index].transform.localScale = Vector3.one *
-                Mathf.Max(0.05f, meteorHitRadius * 2f * progress);
-            meteorFills[index].color = new Color(1f, 0.2f, 0.1f, 0.2f + progress * 0.55f);
-            meteorFalling[index].enabled = progress >= 0.65f;
-            if (meteorFalling[index].enabled)
-                meteorFalling[index].transform.position = meteorPositions[index] +
-                    Vector2.up * Mathf.Lerp(3.5f, 0f, (progress - 0.65f) / 0.35f);
+            float localTime = elapsed - index * interval;
+            if (localTime >= 0f && !meteorScheduled[index])
+                ScheduleMeteor(index, interval);
+            bool warning = localTime >= 0f && localTime < meteorChargeSeconds;
+            meteorBoundaries[index].enabled = warning;
+            meteorFills[index].enabled = warning;
+            meteorFalling[index].enabled = warning &&
+                localTime >= meteorChargeSeconds * 0.65f;
+            if (warning)
+            {
+                float progress = Mathf.Clamp01(localTime / meteorChargeSeconds);
+                meteorFills[index].transform.localScale = Vector3.one *
+                    Mathf.Max(0.05f, meteorHitRadius * 2f * progress);
+                meteorFills[index].color = new Color(1f, 0.2f, 0.1f,
+                    0.2f + progress * 0.55f);
+                if (meteorFalling[index].enabled)
+                    meteorFalling[index].transform.position = meteorPositions[index] +
+                        Vector2.up * Mathf.Lerp(3.5f, 0f,
+                            (progress - 0.65f) / 0.35f);
+            }
+            if (localTime >= meteorChargeSeconds && !meteorLanded[index])
+            {
+                meteorLanded[index] = true;
+                if (Vector2.Distance(player.transform.position, meteorPositions[index]) <=
+                    meteorHitRadius)
+                    player.ReceiveDamage(attackDamage * 1.2f);
+            }
+            bool impact = localTime >= meteorChargeSeconds &&
+                localTime < meteorChargeSeconds + meteorImpactSeconds;
+            meteorImpacts[index].enabled = impact;
+            if (impact)
+                meteorImpacts[index].color = new Color(1f, 0.7f, 0.3f,
+                    0.85f * (1f - (localTime - meteorChargeSeconds) / meteorImpactSeconds));
         }
-    }
-
-    private void DropMeteors()
-    {
-        bool hit = false;
-        for (int index = 0; index < activeMeteorCount; index++)
-        {
-            meteorBoundaries[index].enabled = false;
-            meteorFills[index].enabled = false;
-            meteorFalling[index].enabled = false;
-            meteorImpacts[index].enabled = true;
-            meteorImpacts[index].color = new Color(1f, 0.7f, 0.3f, 0.85f);
-            if (Vector2.Distance(player.transform.position, meteorPositions[index]) <= meteorHitRadius)
-                hit = true;
-        }
-        if (hit)
-            player.ReceiveDamage(attackDamage * 1.2f);
-        action = BossAction.MeteorImpact;
-        actionStartedAt = Time.time;
+        if (elapsed >= meteorPatternSeconds)
+            EndAction();
     }
 
     private void BeginSummonWarning()
     {
+        body.linearVelocity = Vector2.zero;
         action = BossAction.SummonWarning;
         actionStartedAt = Time.time;
         summonGlow.enabled = true;
     }
 
-    private void SummonAllMonsters()
+    private bool SummonAllMonsters()
     {
         if (MonsterSpawnGate2D.IsPaused || summonPrefabs == null)
-            return;
+            return false;
         for (int index = 0; index < summonPrefabs.Length * 2; index++)
         {
             CombatTarget2D prefab = summonPrefabs[index / 2];
             if (prefab != null)
                 Instantiate(prefab, FindSummonPosition(index), Quaternion.identity);
         }
+        return true;
     }
 
     private Vector2 FindSummonPosition(int index)
@@ -487,19 +471,18 @@ public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
         switch (action)
         {
             case BossAction.LaserFiring: nextLaserAt = Time.time + laserCooldownSeconds; break;
-            case BossAction.MeteorImpact: nextMeteorAt = Time.time + meteorCooldownSeconds; break;
-            case BossAction.SummonWarning: nextSummonAt = Time.time + summonCooldownSeconds; break;
+            case BossAction.MeteorStorm: nextMeteorAt = Time.time + meteorCooldownSeconds; break;
         }
         HideEffects();
         action = BossAction.Chasing;
-        nextActionAt = Time.time + actionInterval;
+        nextActionAt = Time.time + (summonPending ? 0f : actionInterval);
     }
 
     private void CancelAction()
     {
         HideEffects();
         action = BossAction.Chasing;
-        nextActionAt = Time.time + actionInterval;
+        nextActionAt = Time.time + (summonPending ? 0f : actionInterval);
     }
 
     private void HideEffects()
@@ -520,9 +503,16 @@ public sealed class FinalBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
 
     public override void TakeDamage(float amount)
     {
-        if (!IsAlive || amount <= 0f)
+        if (!IsAlive || amount <= 0f || IsSummonInvulnerable)
             return;
+        bool aboveHalfHealth = currentHealth > maxHealth * 0.5f;
         currentHealth = Mathf.Max(0f, currentHealth - amount);
+        if (aboveHalfHealth && currentHealth > 0f &&
+            currentHealth <= maxHealth * 0.5f && !hasSummonedAtHalfHealth)
+        {
+            summonPending = true;
+            nextActionAt = Time.time;
+        }
         ReportDamage(amount, transform.position + Vector3.up * 2f);
         UpdateHealthBar();
         if (IsAlive)

@@ -24,7 +24,6 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
     [SerializeField, Min(0.1f)] private float actionInterval = 1.5f;
     [SerializeField, Min(0f)] private float slamCooldownSeconds = 5f;
     [SerializeField, Min(0f)] private float dashCooldownSeconds = 10f;
-    [SerializeField, Min(0f)] private float summonCooldownSeconds = 30f;
     [SerializeField, Min(0f)] private float minimumSummonPlayerDistance = 3.5f;
     [SerializeField] private SpriteRenderer bodyRenderer;
     [SerializeField] private SpriteRenderer healthFillRenderer;
@@ -45,7 +44,8 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
     private float nextActionAt;
     private float nextSlamAt;
     private float nextDashAt;
-    private float nextSummonAt;
+    private bool summonPending;
+    private bool hasSummonedAtHalfHealth;
     private float slamFlashUntil;
     private float dashRemaining;
     private Vector2 dashDirection;
@@ -64,6 +64,10 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
     public bool IsChargingDash => action == BossAction.DashWarning;
     public bool IsWaitingToDash => action == BossAction.DashHold;
     public bool IsDashing => action == BossAction.Dashing;
+    public bool IsChargingSummon => action == BossAction.SummonWarning;
+    public bool HasSummonedAtHalfHealth => hasSummonedAtHalfHealth;
+    public bool IsSummonInvulnerable => action == BossAction.SummonWarning ||
+        (summonPending && !MonsterSpawnGate2D.IsPaused);
 
     public void Configure(SpriteRenderer bossBody, SpriteRenderer healthFill,
         SpriteRenderer slamBoundary, SpriteRenderer slamFill,
@@ -155,8 +159,14 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
             UpdateSummonWarning(progress);
             if (progress >= 1f)
             {
-                SummonMinions();
-                EndAction();
+                if (SummonMinions())
+                {
+                    summonPending = false;
+                    hasSummonedAtHalfHealth = true;
+                    EndAction();
+                }
+                else
+                    CancelAction();
             }
         }
         else if (action == BossAction.Chasing && Time.time >= nextActionAt)
@@ -193,7 +203,10 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
             return;
         }
         if (action != BossAction.Chasing)
+        {
+            body.linearVelocity = Vector2.zero;
             return;
+        }
         Vector2 difference = (Vector2)player.transform.position - body.position;
         float distance = difference.magnitude;
         if (distance <= stopDistance || distance <= 0.001f)
@@ -208,12 +221,12 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
         if (action != BossAction.Chasing || Time.time < nextActionAt || player == null)
             return;
 
-        float distance = Vector2.Distance(transform.position, player.transform.position);
-        if (distance <= patternStartRange && Time.time >= nextSummonAt)
+        if (summonPending && !MonsterSpawnGate2D.IsPaused)
         {
             BeginSummonWarning();
             return;
         }
+        float distance = Vector2.Distance(transform.position, player.transform.position);
         if (distance > slamStartRange && distance <= patternStartRange &&
             Time.time >= nextDashAt)
         {
@@ -231,6 +244,7 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
 
     private void BeginSlam()
     {
+        body.linearVelocity = Vector2.zero;
         action = BossAction.SlamWarning;
         actionStartedAt = Time.time;
         slamFlashUntil = 0f;
@@ -276,6 +290,7 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
 
     private void BeginDashWarning()
     {
+        body.linearVelocity = Vector2.zero;
         dashDirection = ((Vector2)player.transform.position - (Vector2)transform.position).normalized;
         if (dashDirection.sqrMagnitude < 0.001f)
             dashDirection = Vector2.down;
@@ -319,6 +334,7 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
 
     private void BeginSummonWarning()
     {
+        body.linearVelocity = Vector2.zero;
         action = BossAction.SummonWarning;
         actionStartedAt = Time.time;
         circleFill.enabled = true;
@@ -331,10 +347,10 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
         circleFill.color = new Color(0.85f, 0.35f, 1f, 0.2f + 0.3f * progress);
     }
 
-    private void SummonMinions()
+    private bool SummonMinions()
     {
         if (MonsterSpawnGate2D.IsPaused || meleePrefab == null || rangedPrefab == null)
-            return;
+            return false;
         for (int index = 0; index < 6; index++)
         {
             Vector2 position = FindSummonPosition(index);
@@ -343,6 +359,7 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
             else
                 Instantiate(rangedPrefab, position, Quaternion.identity);
         }
+        return true;
     }
 
     private Vector2 FindSummonPosition(int index)
@@ -375,9 +392,6 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
             case BossAction.Dashing:
                 nextDashAt = Time.time + dashCooldownSeconds;
                 break;
-            case BossAction.SummonWarning:
-                nextSummonAt = Time.time + summonCooldownSeconds;
-                break;
         }
         if (hideCircle)
             circleFill.enabled = false;
@@ -385,7 +399,7 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
         dashBoundary.enabled = false;
         dashFill.enabled = false;
         action = BossAction.Chasing;
-        nextActionAt = Time.time + actionInterval;
+        nextActionAt = Time.time + (summonPending ? 0f : actionInterval);
     }
 
     private void CancelAction()
@@ -393,7 +407,7 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
         slamFlashUntil = 0f;
         HideWarnings();
         action = BossAction.Chasing;
-        nextActionAt = Time.time + actionInterval;
+        nextActionAt = Time.time + (summonPending ? 0f : actionInterval);
     }
 
     private void HideWarnings()
@@ -418,9 +432,16 @@ public sealed class MidBoss2D : CombatTarget2D, ILevelScaledEnemyHealth
 
     public override void TakeDamage(float amount)
     {
-        if (!IsAlive || amount <= 0f)
+        if (!IsAlive || amount <= 0f || IsSummonInvulnerable)
             return;
+        bool aboveHalfHealth = currentHealth > maxHealth * 0.5f;
         currentHealth = Mathf.Max(0f, currentHealth - amount);
+        if (aboveHalfHealth && currentHealth > 0f &&
+            currentHealth <= maxHealth * 0.5f && !hasSummonedAtHalfHealth)
+        {
+            summonPending = true;
+            nextActionAt = Time.time;
+        }
         ReportDamage(amount, transform.position + Vector3.up * 1.5f);
         UpdateHealthBar();
         if (IsAlive)

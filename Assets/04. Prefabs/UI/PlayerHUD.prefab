@@ -1134,8 +1134,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 748d0182ab5c49488676f3c7d2d095b5, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerDamageFeedbackUI
-  lowHealthThreshold: 0.3
+  lowHealthThreshold: 0.75
   flashDuration: 0.42
+  deathFadeDuration: 1.8
 --- !u!1 &5686243005081159453
 GameObject:
   m_ObjectHideFlags: 0

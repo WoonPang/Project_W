@@ -423,7 +423,6 @@ MonoBehaviour:
   actionInterval: 1.5
   slamCooldownSeconds: 5
   dashCooldownSeconds: 10
-  summonCooldownSeconds: 30
   minimumSummonPlayerDistance: 3.5
   bodyRenderer: {fileID: 4163579025824051072}
   healthFillRenderer: {fileID: 1628966418964688741}

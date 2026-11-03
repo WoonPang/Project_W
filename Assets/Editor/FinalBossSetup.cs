@@ -110,9 +110,14 @@ public static class FinalBossSetup
                 new Color(0.48f, 0.92f, 0.65f), new Vector3(3.2f, 0.16f, 1f), 13);
             healthFill.transform.localPosition = new Vector3(0f, 2.02f, -0.02f);
 
-            root.AddComponent<FinalBoss2D>().Configure(bossBody, healthFill,
+            FinalBoss2D boss = root.AddComponent<FinalBoss2D>();
+            boss.Configure(bossBody, healthFill,
                 laserBoundary, laserFill, laserBeam, summonGlow, meteorBoundaries,
                 meteorFills, meteorFalling, meteorImpacts, projectile, enemies);
+            SerializedObject bossSettings = new SerializedObject(boss);
+            bossSettings.FindProperty("meteorChargeSeconds").floatValue = 0.8f;
+            bossSettings.FindProperty("meteorPatternSeconds").floatValue = 5f;
+            bossSettings.ApplyModifiedPropertiesWithoutUndo();
             return PrefabUtility.SaveAsPrefabAsset(root, BossPrefabPath).GetComponent<FinalBoss2D>();
         }
         finally
@@ -169,10 +174,10 @@ public static class FinalBossSetup
                 prefab.transform.Find("Meteor 0 Falling")?.GetComponent<SpriteRenderer>() == null ||
                 serialized.FindProperty("laserCooldownSeconds").floatValue != 7f ||
                 serialized.FindProperty("meteorCooldownSeconds").floatValue != 15f ||
-                serialized.FindProperty("summonCooldownSeconds").floatValue != 30f ||
+                serialized.FindProperty("meteorChargeSeconds").floatValue != 0.8f ||
+                serialized.FindProperty("meteorPatternSeconds").floatValue != 5f ||
                 serialized.FindProperty("meteorBoundaries").arraySize != 24 ||
-                serialized.FindProperty("scatterProjectileCount").intValue != 10 ||
-                Mathf.Abs(serialized.FindProperty("scatterArcDegrees").floatValue - 144f) > 0.001f ||
+                serialized.FindProperty("scatterProjectileCount").intValue != 24 ||
                 serialized.FindProperty("scatterProjectilePrefab").objectReferenceValue !=
                     AssetDatabase.LoadAssetAtPath<EnemyProjectile2D>(ProjectilePrefabPath) ||
                 serialized.FindProperty("summonPrefabs").arraySize != 6 ||
@@ -194,12 +199,13 @@ public static class FinalBossSetup
         ValidateScene(PlayScenePath, false);
         ValidateScene(TestPlayScenePath, true);
         ValidateScatterAttack();
+        ValidateDistancePriority();
         ValidatePatterns();
         ValidateIndependentBossPatterns();
         EditorSceneManager.OpenScene(TestScenePath, OpenSceneMode.Single);
         if (UnityEngine.Object.FindFirstObjectByType<FinalBossSpawner2D>() != null)
             throw new InvalidOperationException("Final boss spawner leaked into Prototype_Test.");
-        Debug.Log("Final boss stats, ten-shot scatter attack, fifteen-minute spawn, independent patterns, dense meteors, and mid-boss summons validated.");
+        Debug.Log("Final boss stats, 24-shot radial attack, half-health summon, stationary charges, five-second staggered meteors, and independent patterns validated.");
     }
 
     private static void ValidateScene(string path, bool hasTimeButtons)
@@ -267,14 +273,16 @@ public static class FinalBossSetup
             typeof(FinalBoss2D).GetMethod("Update", flags).Invoke(boss, null);
             EnemyProjectile2D[] shots = UnityEngine.Object.FindObjectsByType<EnemyProjectile2D>(
                 FindObjectsSortMode.None);
-            if (shots.Length != 10)
-                throw new InvalidOperationException("Final boss scatter attack did not fire ten shots.");
+            if (shots.Length != 24)
+                throw new InvalidOperationException("Final boss radial attack did not fire 24 shots.");
             Vector2[] directions = new Vector2[shots.Length];
-            float widestAngle = 0f;
+            float[] angles = new float[shots.Length];
             for (int index = 0; index < shots.Length; index++)
             {
                 directions[index] = (Vector2)typeof(EnemyProjectile2D)
                     .GetField("direction", flags).GetValue(shots[index]);
+                angles[index] = Mathf.Repeat(Mathf.Atan2(directions[index].y,
+                    directions[index].x) * Mathf.Rad2Deg, 360f);
                 float damage = (float)typeof(EnemyProjectile2D)
                     .GetField("damage", flags).GetValue(shots[index]);
                 if (Mathf.Abs(damage - 20f) > 0.001f)
@@ -284,18 +292,26 @@ public static class FinalBossSetup
                     float angle = Vector2.Angle(directions[index], directions[other]);
                     if (angle < 14f)
                         throw new InvalidOperationException("Final boss scatter lanes overlap.");
-                    widestAngle = Mathf.Max(widestAngle, angle);
                 }
             }
-            if (widestAngle < 120f)
-                throw new InvalidOperationException("Final boss scatter fan is too narrow.");
+            Array.Sort(angles);
+            for (int index = 0; index < angles.Length; index++)
+            {
+                float next = index + 1 < angles.Length ? angles[index + 1] : angles[0] + 360f;
+                if (next - angles[index] > 16f)
+                    throw new InvalidOperationException("Final boss radial attack left a large gap.");
+            }
 
             typeof(FinalBoss2D).GetField("nextScatterAt", flags).SetValue(boss, 0f);
             typeof(FinalBoss2D).GetMethod("BeginLaserWarning", flags).Invoke(boss, null);
+            Vector2 chargePosition = instance.GetComponent<Rigidbody2D>().position;
+            typeof(FinalBoss2D).GetMethod("FireScatterAttack", flags).Invoke(boss, null);
+            typeof(FinalBoss2D).GetMethod("FixedUpdate", flags).Invoke(boss, null);
             typeof(FinalBoss2D).GetMethod("Update", flags).Invoke(boss, null);
             if (UnityEngine.Object.FindObjectsByType<EnemyProjectile2D>(
-                    FindObjectsSortMode.None).Length != 10)
-                throw new InvalidOperationException("Final boss fired scatter during another pattern.");
+                    FindObjectsSortMode.None).Length != 24 ||
+                Vector2.Distance(instance.GetComponent<Rigidbody2D>().position, chargePosition) > 0.001f)
+                throw new InvalidOperationException("Final boss moved or fired during laser charge.");
         }
         finally
         {
@@ -304,6 +320,41 @@ public static class FinalBossSetup
                 UnityEngine.Object.DestroyImmediate(shot.gameObject);
             UnityEngine.Object.DestroyImmediate(instance);
             Time.timeScale = previousTimeScale;
+        }
+    }
+
+    private static void ValidateDistancePriority()
+    {
+        EditorSceneManager.OpenScene(TestPlayScenePath, OpenSceneMode.Single);
+        PlayerStats player = UnityEngine.Object.FindFirstObjectByType<PlayerStats>();
+        InvokeAwake(player);
+        GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(
+            AssetDatabase.LoadAssetAtPath<GameObject>(BossPrefabPath));
+        try
+        {
+            FinalBoss2D boss = instance.GetComponent<FinalBoss2D>();
+            InvokeAwake(boss);
+            Type type = typeof(FinalBoss2D);
+            BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            type.GetField("nextActionAt", flags).SetValue(boss, Time.time - 1f);
+            instance.transform.position = player.transform.position + Vector3.right * 7f;
+            type.GetMethod("TryStartPattern", flags).Invoke(boss, null);
+            if (!boss.IsChargingLaser)
+                throw new InvalidOperationException("Final boss did not prioritize laser at long range.");
+            type.GetMethod("CancelAction", flags).Invoke(boss, null);
+            type.GetField("nextActionAt", flags).SetValue(boss, Time.time - 1f);
+            instance.transform.position = player.transform.position + Vector3.right * 4f;
+            type.GetMethod("TryStartPattern", flags).Invoke(boss, null);
+            if (!boss.IsChargingMeteor)
+                throw new InvalidOperationException("Final boss did not prioritize meteors at close range.");
+            Vector2 chargePosition = instance.GetComponent<Rigidbody2D>().position;
+            type.GetMethod("FixedUpdate", flags).Invoke(boss, null);
+            if (Vector2.Distance(instance.GetComponent<Rigidbody2D>().position, chargePosition) > 0.001f)
+                throw new InvalidOperationException("Final boss moved during meteor charge.");
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(instance);
         }
     }
 
@@ -331,7 +382,7 @@ public static class FinalBossSetup
             FieldInfo action = type.GetField("action", flags);
             FieldInfo startedAt = type.GetField("actionStartedAt", flags);
             float laserFiredAt = (float)startedAt.GetValue(boss);
-            type.GetMethod("TryStartRandomPattern", flags).Invoke(boss, null);
+            type.GetMethod("TryStartPattern", flags).Invoke(boss, null);
             if (action.GetValue(boss).ToString() != "LaserFiring" ||
                 (float)startedAt.GetValue(boss) != laserFiredAt)
                 throw new InvalidOperationException("Final boss started overlapping patterns.");
@@ -341,48 +392,78 @@ public static class FinalBossSetup
                     (Time.time + 7f)) > 0.1f)
                 throw new InvalidOperationException("Final boss laser cooldown is wrong.");
 
-            type.GetMethod("BeginMeteorWarning", flags).Invoke(boss, null);
+            type.GetMethod("BeginMeteorStorm", flags).Invoke(boss, null);
             if (!boss.IsChargingMeteor ||
-                !instance.transform.Find("Meteor 0 Boundary").GetComponent<SpriteRenderer>().enabled)
-                throw new InvalidOperationException("Final boss meteors did not warn.");
+                !instance.transform.Find("Meteor 0 Boundary").GetComponent<SpriteRenderer>().enabled ||
+                instance.transform.Find("Meteor 1 Boundary").GetComponent<SpriteRenderer>().enabled)
+                throw new InvalidOperationException("Final boss meteors did not begin sequentially.");
             Vector2[] meteorPositions = (Vector2[])type.GetField("meteorPositions", flags)
                 .GetValue(boss);
             int meteorCount = (int)type.GetField("activeMeteorCount", flags).GetValue(boss);
-            Vector2 safePosition = (Vector2)type.GetField("reservedMeteorSafePosition", flags)
-                .GetValue(boss);
-            if (meteorCount < 7 || meteorCount > 24 ||
-                Vector2.Distance(safePosition, player.transform.position) > 5f)
-                throw new InvalidOperationException("Final boss meteor coverage or dodge cell is wrong.");
-            for (int first = 0; first < meteorCount; first++)
-            {
-                if (Vector2.Distance(meteorPositions[first], safePosition) < 2.5f)
-                    throw new InvalidOperationException("A meteor covered the reserved dodge cell.");
-                for (int second = first + 1; second < meteorCount; second++)
-                    if (Vector2.Distance(meteorPositions[first], meteorPositions[second]) < 2.5f)
-                        throw new InvalidOperationException("Final boss meteors overlap.");
-            }
+            if (meteorCount != 24)
+                throw new InvalidOperationException("Final boss meteor count is wrong.");
+            Camera camera = Camera.main;
+            float interval = (5f - 0.8f - 0.3f) / (meteorCount - 1);
             meteorPositions[0] = player.transform.position;
             typeof(PlayerStats).GetField("invulnerableUntil", flags).SetValue(player, -1f);
-            type.GetField("actionStartedAt", flags).SetValue(boss, Time.time - 1.7f);
+            type.GetMethod("FireScatterAttack", flags).Invoke(boss, null);
+            if (UnityEngine.Object.FindObjectsByType<EnemyProjectile2D>(
+                    FindObjectsSortMode.None).Length != 0)
+                throw new InvalidOperationException("Final boss fired its basic attack during meteors.");
+            type.GetField("actionStartedAt", flags).SetValue(boss, Time.time - 0.85f);
             type.GetMethod("Update", flags).Invoke(boss, null);
-            if (boss.IsChargingMeteor ||
+            if (!boss.IsChargingMeteor ||
                 !instance.transform.Find("Meteor 0 Impact").GetComponent<SpriteRenderer>().enabled ||
+                instance.transform.Find("Meteor 23 Impact").GetComponent<SpriteRenderer>().enabled ||
                 Mathf.Abs(player.CurrentHealth - 46f) > 0.001f)
-                throw new InvalidOperationException("Final boss meteors did not land.");
-            finish.Invoke(boss, null);
+                throw new InvalidOperationException("Final boss meteors did not land one by one.");
+            for (int index = 1; index < meteorCount; index++)
+            {
+                startedAt.SetValue(boss, Time.time - (0.85f + index * interval));
+                type.GetMethod("Update", flags).Invoke(boss, null);
+            }
+            for (int first = 0; first < meteorCount; first++)
+            {
+                Vector3 viewport = camera.WorldToViewportPoint(meteorPositions[first]);
+                if (viewport.z <= 0f || viewport.x <= 0f || viewport.x >= 1f ||
+                    viewport.y <= 0f || viewport.y >= 1f)
+                    throw new InvalidOperationException("A meteor landed outside the view.");
+                for (int second = first + 1; second < meteorCount; second++)
+                    if ((second - first) * interval < 1.1f &&
+                        Vector2.Distance(meteorPositions[first], meteorPositions[second]) < 2.45f)
+                        throw new InvalidOperationException("Simultaneous meteor warnings overlap.");
+            }
+            startedAt.SetValue(boss, Time.time - 5.1f);
+            type.GetMethod("Update", flags).Invoke(boss, null);
+            if (boss.IsChargingMeteor)
+                throw new InvalidOperationException("Final boss meteor pattern exceeded five seconds.");
             if (Mathf.Abs((float)type.GetField("nextMeteorAt", flags).GetValue(boss) -
                     (Time.time + 15f)) > 0.1f)
                 throw new InvalidOperationException("Final boss meteor cooldown is wrong.");
 
-            type.GetMethod("BeginSummonWarning", flags).Invoke(boss, null);
+            boss.TakeDamage(boss.MaxHealth * 0.5f);
+            if (!boss.IsSummonInvulnerable ||
+                boss.CurrentHealth != boss.MaxHealth * 0.5f)
+                throw new InvalidOperationException("Final boss did not enter its half-health summon phase.");
+            boss.TakeDamage(20f);
+            if (boss.CurrentHealth != boss.MaxHealth * 0.5f)
+                throw new InvalidOperationException("Final boss took damage while summoning.");
+            type.GetMethod("TryStartPattern", flags).Invoke(boss, null);
             if (!boss.IsChargingSummon)
-                throw new InvalidOperationException("Final boss summon warning is missing.");
-            finish.Invoke(boss, null);
-            if (Mathf.Abs((float)type.GetField("nextSummonAt", flags).GetValue(boss) -
-                    (Time.time + 30f)) > 0.1f)
-                throw new InvalidOperationException("Final boss summon cooldown is wrong.");
-
-            type.GetMethod("SummonAllMonsters", flags).Invoke(boss, null);
+                throw new InvalidOperationException("Final boss did not prioritize its half-health summon.");
+            MonsterSpawnGate2D.SetPaused(true);
+            startedAt.SetValue(boss, Time.time - 1.1f);
+            type.GetMethod("Update", flags).Invoke(boss, null);
+            if (boss.IsSummonInvulnerable || boss.HasSummonedAtHalfHealth)
+                throw new InvalidOperationException("Paused spawning consumed the final boss summon.");
+            MonsterSpawnGate2D.SetPaused(false);
+            type.GetMethod("TryStartPattern", flags).Invoke(boss, null);
+            if (!boss.IsChargingSummon)
+                throw new InvalidOperationException("Final boss did not retry its queued summon.");
+            startedAt.SetValue(boss, Time.time - 1.1f);
+            type.GetMethod("Update", flags).Invoke(boss, null);
+            if (!boss.HasSummonedAtHalfHealth || boss.IsSummonInvulnerable)
+                throw new InvalidOperationException("Final boss summon did not finish once.");
             foreach (string path in EnemyPrefabPaths)
             {
                 Type enemyType = AssetDatabase.LoadAssetAtPath<GameObject>(path)
@@ -402,9 +483,20 @@ public static class FinalBossSetup
                 if (count != 2)
                     throw new InvalidOperationException("Final boss did not summon two of each monster, including mid-bosses.");
             }
+            type.GetField("nextActionAt", flags).SetValue(boss, Time.time - 1f);
+            type.GetField("nextLaserAt", flags).SetValue(boss, Time.time + 100f);
+            type.GetField("nextMeteorAt", flags).SetValue(boss, Time.time + 100f);
+            type.GetMethod("TryStartPattern", flags).Invoke(boss, null);
+            if (boss.IsChargingSummon)
+                throw new InvalidOperationException("Final boss repeated its half-health summon.");
         }
         finally
         {
+            MonsterSpawnGate2D.SetPaused(false);
+            foreach (CombatTarget2D target in UnityEngine.Object.FindObjectsByType<CombatTarget2D>(
+                         FindObjectsSortMode.None))
+                if (target.gameObject != instance)
+                    UnityEngine.Object.DestroyImmediate(target.gameObject);
             UnityEngine.Object.DestroyImmediate(instance);
         }
     }
@@ -433,13 +525,11 @@ public static class FinalBossSetup
             finalType.GetField("nextActionAt", flags).SetValue(finalBoss, now - 1f);
             finalType.GetField("nextLaserAt", flags).SetValue(finalBoss, now - 1f);
             finalType.GetField("nextMeteorAt", flags).SetValue(finalBoss, now + 100f);
-            finalType.GetField("nextSummonAt", flags).SetValue(finalBoss, now + 100f);
             midType.GetField("nextActionAt", flags).SetValue(midBoss, now - 1f);
             midType.GetField("nextSlamAt", flags).SetValue(midBoss, now - 1f);
             midType.GetField("nextDashAt", flags).SetValue(midBoss, now + 100f);
-            midType.GetField("nextSummonAt", flags).SetValue(midBoss, now + 100f);
 
-            finalType.GetMethod("TryStartRandomPattern", flags).Invoke(finalBoss, null);
+            finalType.GetMethod("TryStartPattern", flags).Invoke(finalBoss, null);
             midType.GetMethod("TryStartPattern", flags).Invoke(midBoss, null);
             if (!finalBoss.IsChargingLaser || !midBoss.IsChargingSlam)
                 throw new InvalidOperationException("Bosses did not use patterns independently.");

@@ -137,7 +137,6 @@ public static class MidBossSetup
                 prefab.transform.Find("Dash Fill")?.GetComponent<SpriteRenderer>() == null ||
                 new SerializedObject(boss).FindProperty("slamCooldownSeconds").floatValue != 5f ||
                 new SerializedObject(boss).FindProperty("dashCooldownSeconds").floatValue != 10f ||
-                new SerializedObject(boss).FindProperty("summonCooldownSeconds").floatValue != 30f ||
                 new SerializedObject(boss).FindProperty("stopDistance").floatValue != 2.1f ||
                 new SerializedObject(boss).FindProperty("slamStartRange").floatValue != 2.3f ||
                 new SerializedObject(boss).FindProperty("slamRadius").floatValue != 4.5f ||
@@ -172,7 +171,7 @@ public static class MidBossSetup
         if (!test.IsValid() ||
             UnityEngine.Object.FindFirstObjectByType<MidBossSpawner2D>() != null)
             throw new InvalidOperationException("Prototype_Test should remain a dummy-only scene.");
-        Debug.Log("Mid boss waves, level HP, summon-first and distance-based patterns, close-range dodgeable slam, dash hold, cooldowns, and summons validated.");
+        Debug.Log("Mid boss waves, level HP, stationary charge, half-health invulnerable summon, distance-based attacks, and cooldowns validated.");
     }
 
     private static void ValidateScene(string path, bool testButtons)
@@ -327,7 +326,6 @@ public static class MidBossSetup
             FieldInfo nextAction = type.GetField("nextActionAt", flags);
             FieldInfo nextSlam = type.GetField("nextSlamAt", flags);
             FieldInfo nextDash = type.GetField("nextDashAt", flags);
-            FieldInfo nextSummon = type.GetField("nextSummonAt", flags);
             MethodInfo choose = type.GetMethod("TryStartPattern", flags);
             MethodInfo finish = type.GetMethod("EndAction", flags);
             float now = Time.time;
@@ -335,7 +333,6 @@ public static class MidBossSetup
             nextAction.SetValue(boss, now - 1f);
             nextSlam.SetValue(boss, now + 100f);
             nextDash.SetValue(boss, now + 100f);
-            nextSummon.SetValue(boss, now + 100f);
             choose.Invoke(boss, null);
             if (action.GetValue(boss).ToString() != "Chasing")
                 throw new InvalidOperationException("Mid boss used a pattern on cooldown.");
@@ -389,13 +386,48 @@ public static class MidBossSetup
             nextAction.SetValue(boss, now - 1f);
             nextSlam.SetValue(boss, now - 1f);
             nextDash.SetValue(boss, now - 1f);
-            nextSummon.SetValue(boss, now - 1f);
+            boss.TakeDamage(boss.MaxHealth * 0.5f);
+            if (!boss.IsSummonInvulnerable || boss.CurrentHealth != boss.MaxHealth * 0.5f)
+                throw new InvalidOperationException("Mid boss did not enter the half-health summon phase.");
+            boss.TakeDamage(10f);
+            if (boss.CurrentHealth != boss.MaxHealth * 0.5f)
+                throw new InvalidOperationException("Mid boss took damage during its summon phase.");
             choose.Invoke(boss, null);
-            if (action.GetValue(boss).ToString() != "SummonWarning")
-                throw new InvalidOperationException("Mid boss did not prioritize the ready summon.");
-            finish.Invoke(boss, new object[] { true });
-            if (Mathf.Abs((float)nextSummon.GetValue(boss) - (Time.time + 30f)) > 0.1f)
-                throw new InvalidOperationException("Mid boss summon cooldown is wrong.");
+            if (!boss.IsChargingSummon)
+                throw new InvalidOperationException("Mid boss did not prioritize its half-health summon.");
+            Vector2 summonPosition = instance.GetComponent<Rigidbody2D>().position;
+            type.GetMethod("FixedUpdate", flags).Invoke(boss, null);
+            if (Vector2.Distance(instance.GetComponent<Rigidbody2D>().position, summonPosition) > 0.001f)
+                throw new InvalidOperationException("Mid boss moved while charging its summon.");
+            MonsterSpawnGate2D.SetPaused(true);
+            startedAt.SetValue(boss, Time.time - 1f);
+            type.GetMethod("Update", flags).Invoke(boss, null);
+            if (boss.IsSummonInvulnerable || boss.HasSummonedAtHalfHealth)
+                throw new InvalidOperationException("Paused spawning consumed the mid boss summon.");
+            MonsterSpawnGate2D.SetPaused(false);
+            choose.Invoke(boss, null);
+            if (!boss.IsChargingSummon)
+                throw new InvalidOperationException("Mid boss did not retry its queued summon.");
+            startedAt.SetValue(boss, Time.time - 1f);
+            type.GetMethod("Update", flags).Invoke(boss, null);
+            if (!boss.HasSummonedAtHalfHealth || boss.IsSummonInvulnerable ||
+                UnityEngine.Object.FindObjectsByType<BasicMeleeEnemy2D>(
+                    FindObjectsSortMode.None).Length != 3 ||
+                UnityEngine.Object.FindObjectsByType<BasicRangedEnemy2D>(
+                    FindObjectsSortMode.None).Length != 3)
+                throw new InvalidOperationException("Mid boss did not complete its one-time summon.");
+            foreach (BasicMeleeEnemy2D enemy in UnityEngine.Object.FindObjectsByType<BasicMeleeEnemy2D>(
+                         FindObjectsSortMode.None))
+                UnityEngine.Object.DestroyImmediate(enemy.gameObject);
+            foreach (BasicRangedEnemy2D enemy in UnityEngine.Object.FindObjectsByType<BasicRangedEnemy2D>(
+                         FindObjectsSortMode.None))
+                UnityEngine.Object.DestroyImmediate(enemy.gameObject);
+            nextAction.SetValue(boss, now - 1f);
+            nextSlam.SetValue(boss, now + 100f);
+            nextDash.SetValue(boss, now + 100f);
+            choose.Invoke(boss, null);
+            if (boss.IsChargingSummon)
+                throw new InvalidOperationException("Mid boss repeated its half-health summon.");
 
             instance.transform.position = player.transform.position + Vector3.right * 5f;
             nextAction.SetValue(boss, now - 1f);
@@ -426,7 +458,6 @@ public static class MidBossSetup
                     throw new InvalidOperationException("First mid boss did not start its pattern.");
                 nextAction.SetValue(secondBoss, now - 1f);
                 nextDash.SetValue(secondBoss, now + 100f);
-                nextSummon.SetValue(secondBoss, now + 100f);
                 choose.Invoke(secondBoss, null);
                 if (!secondBoss.IsChargingSlam)
                     throw new InvalidOperationException("Second mid boss did not start independently.");
@@ -441,6 +472,7 @@ public static class MidBossSetup
         }
         finally
         {
+            MonsterSpawnGate2D.SetPaused(false);
             player.transform.position = previousPlayerPosition;
             Time.timeScale = previousTimeScale;
             UnityEngine.Object.DestroyImmediate(instance);

@@ -7516,21 +7516,20 @@ MonoBehaviour:
   stopDistance: 5
   attackRange: 8
   scatterAttackInterval: 2.2
-  scatterProjectileCount: 10
-  scatterArcDegrees: 144
+  scatterProjectileCount: 24
   laserChargeSeconds: 1.5
   laserFlashSeconds: 0.3
   laserLength: 30
   laserHitRadius: 0.55
   laserAimLockFraction: 0.65
-  meteorChargeSeconds: 1.6
+  meteorChargeSeconds: 0.8
   meteorImpactSeconds: 0.3
+  meteorPatternSeconds: 5
   meteorHitRadius: 1.1
   summonChargeSeconds: 1
   actionInterval: 1.5
   laserCooldownSeconds: 7
   meteorCooldownSeconds: 15
-  summonCooldownSeconds: 30
   minimumSummonPlayerDistance: 3.5
   bodyRenderer: {fileID: 7108603790843381147}
   healthFillRenderer: {fileID: 4325292191830746102}
