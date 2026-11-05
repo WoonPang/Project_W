@@ -94,9 +94,7 @@ public sealed class PlayerHudUI : MonoBehaviour
         augments = FindFirstObjectByType<PlayerAugments>();
         automaticSkills = FindFirstObjectByType<PlayerAutomaticAugments2D>();
 
-        // The OS font supplies Korean glyphs for the stat labels during Play mode.
-        runtimeFont = Font.CreateDynamicFontFromOSFont(
-            new[] { "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR", "Arial" }, 32);
+        runtimeFont = ProjectKoreanFont.Load();
         if (runtimeFont != null)
         {
             foreach (Text label in GetComponentsInChildren<Text>(true))
@@ -135,8 +133,6 @@ public sealed class PlayerHudUI : MonoBehaviour
             levelUpButton.onClick.RemoveListener(LevelUp);
         if (augments != null)
             augments.AugmentApplied -= OnAugmentApplied;
-        if (runtimeFont != null)
-            Destroy(runtimeFont);
     }
 
     private void AddHealth()

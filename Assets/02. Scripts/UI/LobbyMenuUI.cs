@@ -20,8 +20,7 @@ public sealed class LobbyMenuUI : MonoBehaviour
     {
         Time.timeScale = 1f;
         MonsterSpawnGate2D.SetPaused(false);
-        runtimeFont = Font.CreateDynamicFontFromOSFont(
-            new[] { "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR", "Arial" }, 64);
+        runtimeFont = ProjectKoreanFont.Load();
         if (runtimeFont != null)
         {
             foreach (Text label in GetComponentsInChildren<Text>(true))
@@ -52,7 +51,5 @@ public sealed class LobbyMenuUI : MonoBehaviour
             testButton.onClick.RemoveListener(StartTest);
         if (exitButton != null)
             exitButton.onClick.RemoveListener(ExitGame);
-        if (runtimeFont != null)
-            Destroy(runtimeFont);
     }
 }

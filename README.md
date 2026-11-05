@@ -4,11 +4,7 @@
 
 Unity 버전: **6000.3.7f1** (2D URP)
 
-## 웹 빌드 준비 상태 (2026-11-03 확인)
-
-Unity의 Web 플랫폼으로 브라우저용 빌드를 만들 수 있습니다. 현재 이 Mac의 Unity 6000.3.7f1에는 `MacStandaloneSupport`만 설치되어 있어 **Web Build Support 모듈 설치가 먼저 필요**합니다. Unity Hub의 해당 에디터 **Manage > Add modules > Web Build Support**에서 추가할 수 있습니다. 빌드의 첫 씬은 이미 `Prototype_Lobby`로 설정되어 있습니다.
-
-현재 한글 UI는 여러 스크립트에서 `Font.CreateDynamicFontFromOSFont`로 macOS 글꼴을 불러옵니다. Web 빌드는 사용자 OS 글꼴에 접근할 수 없으므로, 웹 빌드 전에 배포 가능한 한글 글꼴 파일을 프로젝트에 포함하고 UI 참조를 바꿔야 합니다. 로비의 `Exit`은 웹에서 브라우저 탭을 닫는 대신 Unity 플레이어만 종료합니다. 참고: [Unity Hub 모듈 설치](https://docs.unity.com/en-us/hub/use-hub-cli), [Unity Web 글꼴 제한](https://docs.unity3d.com/ja/2022.1/Manual/webgl-graphics.html), [Web에서 Application.Quit 동작](https://docs.unity3d.com/ja/current/ScriptReference/Application.Quit.html). **웹 빌드 파일은 아직 생성하지 않았습니다.**
+이 README는 Unity 프로젝트의 **씬, 코드, 조작법, 수치**를 기록합니다. 한 단계 바깥 [`README.md`](../README.md)는 전체 작업 폴더를 여는 방법과 최근 변경 요약을 제공합니다.
 
 ## 실행하기
 

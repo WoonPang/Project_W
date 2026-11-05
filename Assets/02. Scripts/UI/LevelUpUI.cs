@@ -39,8 +39,7 @@ public sealed class LevelUpUI : MonoBehaviour
             cardPositions[index] = ((RectTransform)buttons[index].transform).anchoredPosition;
         overlayRoot.SetActive(false);
 
-        runtimeFont = Font.CreateDynamicFontFromOSFont(
-            new[] { "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR", "Arial" }, 48);
+        runtimeFont = ProjectKoreanFont.Load();
         if (runtimeFont != null)
         {
             foreach (Text label in GetComponentsInChildren<Text>(true))
@@ -140,7 +139,5 @@ public sealed class LevelUpUI : MonoBehaviour
             thirdButton.onClick.RemoveListener(ChooseThird);
         if (IsOpen)
             Time.timeScale = timeScaleBeforeOpen;
-        if (runtimeFont != null)
-            Destroy(runtimeFont);
     }
 }

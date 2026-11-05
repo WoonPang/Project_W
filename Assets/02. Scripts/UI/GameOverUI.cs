@@ -34,7 +34,6 @@ public sealed class GameOverUI : MonoBehaviour
     private Texture2D portraitTexture;
     private Texture2D clearVeilTexture;
     private Font font;
-    private bool ownsFont;
     private float phaseElapsed;
     private float veilProgress;
     private bool isVictory;
@@ -49,9 +48,7 @@ public sealed class GameOverUI : MonoBehaviour
         deathFeedback = GetComponent<PlayerDamageFeedbackUI>();
         sessionTime = FindFirstObjectByType<GameSessionTime2D>();
         playTime = GetComponent<PlayTimeUI>();
-        font = Font.CreateDynamicFontFromOSFont(
-            new[] { "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR", "Arial" }, 64);
-        ownsFont = font != null;
+        font = ProjectKoreanFont.Load();
         if (font == null)
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         BuildScreen();
@@ -398,8 +395,6 @@ public sealed class GameOverUI : MonoBehaviour
             Destroy(portraitTexture);
         if (clearVeilTexture != null)
             Destroy(clearVeilTexture);
-        if (ownsFont && font != null)
-            Destroy(font);
         if (canvas != null)
             Destroy(canvas.gameObject);
     }
